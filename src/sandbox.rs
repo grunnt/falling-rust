@@ -15,12 +15,12 @@ impl SandBox {
         let mut world = SandBox::empty(width, height);
         // Set indestructible pixels at the border to ease computations
         for x in 0..world.width() {
-            world.set_element(x, 0, Element::Indestructible, false);
-            world.set_element(x, world.height() - 1, Element::Indestructible, false);
+            world.set_element(x, 0, Element::Indestructible);
+            world.set_element(x, world.height() - 1, Element::Indestructible);
         }
         for y in 0..world.height() {
-            world.set_element(0, y, Element::Indestructible, false);
-            world.set_element(world.width() - 1, y, Element::Indestructible, false);
+            world.set_element(0, y, Element::Indestructible);
+            world.set_element(world.width() - 1, y, Element::Indestructible);
         }
         world
     }
@@ -35,7 +35,6 @@ impl SandBox {
                     variant: 0,
                     strength: 0,
                     visited: false,
-                    source: false
                 };
                 width * height
             ],
@@ -66,10 +65,10 @@ impl SandBox {
     }
 
     pub fn clear_cell(&mut self, x: usize, y: usize) {
-        self.set_element(x, y, Element::Air, false);
+        self.set_element(x, y, Element::Air);
     }
 
-    pub fn set_element(&mut self, x: usize, y: usize, element: Element, source: bool) {
+    pub fn set_element(&mut self, x: usize, y: usize, element: Element) {
         let index = self.index(x, y);
         let mut cell = &mut self.cells[index];
         if cell.element == Element::Indestructible {
@@ -79,7 +78,6 @@ impl SandBox {
         cell.element = element;
         cell.visited = self.visited_state;
         cell.strength = element.strength();
-        cell.source = source;
         if element.randomize_color_factor() > 0.0 {
             cell.variant = self.random.gen();
         }

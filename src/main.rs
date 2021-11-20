@@ -22,6 +22,13 @@ use toolbox::{Tool, ToolBox};
 
 fn main() {
     App::build()
+        .insert_resource(WindowDescriptor {
+            title: "Falling-Rust".to_string(),
+            width: 1024.,
+            height: 600.,
+            vsync: true,
+            ..Default::default()
+        })
         .add_plugins(DefaultPlugins)
         .add_plugin(EguiPlugin)
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
@@ -56,7 +63,7 @@ fn setup(
     );
     let th = textures.add(texture);
 
-    // Now spawn the sprite for the level -> TODO use handle to update texture?
+    // Now spawn the sprite for the level
     commands.spawn().insert_bundle(SpriteBundle {
         material: materials.add(th.into()),
         transform: Transform {
@@ -83,9 +90,13 @@ fn gui_system(
         ui.radio_value(&mut toolbox.element, Element::Acid, "Acid");
         ui.radio_value(&mut toolbox.element, Element::Oil, "Oil");
         ui.radio_value(&mut toolbox.element, Element::Lava, "Lava");
-        ui.radio_value(&mut toolbox.element, Element::Drain, "Liquid drain");
         ui.radio_value(&mut toolbox.element, Element::Fire, "Fire");
-        ui.checkbox(&mut toolbox.source, "Source");
+        ui.radio_value(&mut toolbox.element, Element::WaterSource, "Water source");
+        ui.radio_value(&mut toolbox.element, Element::AcidSource, "Acid Source");
+        ui.radio_value(&mut toolbox.element, Element::OilSource, "Oil source");
+        ui.radio_value(&mut toolbox.element, Element::LavaSource, "Lava source");
+        ui.radio_value(&mut toolbox.element, Element::FireSource, "Fire source");
+        ui.radio_value(&mut toolbox.element, Element::Drain, "Liquid drain");
         ui.label("Tool size:");
         ui.add(egui::Slider::new(&mut toolbox.tool_size, 1..=64));
         ui.label("Tool type:");

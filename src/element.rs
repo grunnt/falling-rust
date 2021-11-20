@@ -13,6 +13,11 @@ pub enum Element {
     Oil,
     Lava,
     Smoke,
+    WaterSource,
+    AcidSource,
+    OilSource,
+    FireSource,
+    LavaSource,
     Indestructible,
 }
 
@@ -92,6 +97,11 @@ impl Element {
             Element::Indestructible => (64, 40, 40),
             Element::Air => (8, 8, 8),
             Element::Smoke => (16, 16, 16),
+            Element::WaterSource => (8, 8, 128),
+            Element::AcidSource => (80, 255, 32),
+            Element::OilSource => (16, 4, 16),
+            Element::FireSource => (255, 128, 8),
+            Element::LavaSource => (128, 32, 8),
         }
     }
 }

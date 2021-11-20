@@ -12,7 +12,6 @@ pub enum Tool {
 pub struct ToolBox {
     pub tool: Tool,
     pub element: Element,
-    pub source: bool,
     pub tool_size: usize,
     random: Xoshiro256Plus,
 }
@@ -45,7 +44,7 @@ impl ToolBox {
                         let dx = (cx as isize - x as isize).abs();
                         let dy = (cy as isize - y as isize).abs();
                         if dx * dx + dy * dy <= radius_sq {
-                            level.set_element(cx, cy, self.element, self.source);
+                            level.set_element(cx, cy, self.element);
                         }
                     }
                 }
@@ -53,7 +52,7 @@ impl ToolBox {
             Tool::FillSquare => {
                 for cy in y1..y2 {
                     for cx in x1..x2 {
-                        level.set_element(cx, cy, self.element, self.source);
+                        level.set_element(cx, cy, self.element);
                     }
                 }
             }
@@ -66,7 +65,7 @@ impl ToolBox {
                     let dx = (cx as isize - x as isize).abs();
                     let dy = (cy as isize - y as isize).abs();
                     if dx * dx + dy * dy <= radius_sq {
-                        level.set_element(cx, cy, self.element, self.source);
+                        level.set_element(cx, cy, self.element);
                     }
                 }
             }
@@ -79,7 +78,6 @@ impl Default for ToolBox {
         Self {
             tool: Tool::FillCircle,
             element: Element::Sand,
-            source: false,
             tool_size: 8,
             random: Xoshiro256Plus::from_entropy(),
         }

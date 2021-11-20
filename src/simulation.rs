@@ -49,10 +49,6 @@ fn update_cell(x: usize, y: usize, level: &mut SandBox) {
         // Visited this one already
         return;
     }
-    if cell.source {
-        source(x, y, cell.element, level);
-        return;
-    }
     let marked_as_visited = match cell.element {
         Element::Sand => update_sand(x, y, level),
         Element::Water => update_water(x, y, level),
@@ -63,6 +59,11 @@ fn update_cell(x: usize, y: usize, level: &mut SandBox) {
         Element::Ash => update_ash(x, y, level),
         Element::Lava => update_lava(x, y, level),
         Element::Smoke => update_smoke(x, y, level),
+        Element::WaterSource => update_source(x, y, Element::Water, level),
+        Element::AcidSource => update_source(x, y, Element::Acid, level),
+        Element::OilSource => update_source(x, y, Element::Oil, level),
+        Element::LavaSource => update_source(x, y, Element::Lava, level),
+        Element::FireSource => update_source(x, y, Element::Fire, level),
         Element::Wood => false,
         Element::Rock => false,
         Element::Indestructible => false,
@@ -70,12 +71,6 @@ fn update_cell(x: usize, y: usize, level: &mut SandBox) {
     };
     if !marked_as_visited {
         level.set_visited(x, y);
-    }
-}
-
-fn source(x: usize, y: usize, element: Element, level: &mut SandBox) {
-    if level.get(x, y + 1).element != element {
-        level.set_element(x, y + 1, element, false);
     }
 }
 
@@ -191,7 +186,7 @@ fn touch_water(
     }
     if other_element == Element::Fire {
         level.clear_cell(water_x, water_y);
-        level.set_element(other_x, other_y, Element::Water, false);
+        level.set_element(other_x, other_y, Element::Water);
         return Some(true);
     }
     None
@@ -330,9 +325,7 @@ fn update_fire(x: usize, y: usize, level: &mut SandBox) -> bool {
     let random = level.random(5);
     // Reduce fire strength over time
     if random > 3 && !level.reduce_strength(x, y) {
-        // if level.get(x, y - 1).element == Element::Air {
-        level.set_element(x, y, Element::Smoke, false);
-        // }
+        level.set_element(x, y, Element::Smoke);
         return true;
     }
     // Make fire flicker
@@ -379,7 +372,7 @@ fn update_lava(x: usize, y: usize, level: &mut SandBox) -> bool {
     }
     // Give off sparks
     if random == 0 && level.get(x, y - 1).element == Element::Air {
-        level.set_element(x, y - 1, Element::Fire, false);
+        level.set_element(x, y - 1, Element::Fire);
     }
     // Fall down
     if let Some(visited) = touch_lava(level, x, y, x, y + 1) {
@@ -440,6 +433,14 @@ fn update_smoke(x: usize, y: usize, level: &mut SandBox) -> bool {
     }
     if neighbour_element == Element::Fire || neighbour_element.form() == ElementForm::Liquid {
         level.clear_cell(x, y);
+        return true;
+    }
+    false
+}
+
+fn update_source(x: usize, y: usize, element: Element, level: &mut SandBox) -> bool {
+    if level.get(x, y + 1).element != element {
+        level.set_element(x, y + 1, element);
         return true;
     }
     false

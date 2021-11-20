@@ -6,7 +6,6 @@ pub struct Cell {
     pub variant: u8,
     pub strength: u8,
     pub visited: bool,
-    pub source: bool,
 }
 
 impl Cell {
