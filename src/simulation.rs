@@ -50,6 +50,7 @@ fn update_cell(x: usize, y: usize, level: &mut SandBox) {
         return;
     }
     let marked_as_visited = match cell.element {
+        Element::Air => update_air(x, y, level),
         Element::Sand => update_sand(x, y, level),
         Element::Water => update_water(x, y, level),
         Element::Acid => update_acid(x, y, level),
@@ -59,15 +60,15 @@ fn update_cell(x: usize, y: usize, level: &mut SandBox) {
         Element::Ash => update_ash(x, y, level),
         Element::Lava => update_lava(x, y, level),
         Element::Smoke => update_smoke(x, y, level),
+        Element::Life => update_life(x, y, level),
+        Element::Wood => false,
+        Element::Rock => false,
+        Element::Indestructible => false,
         Element::WaterSource => update_source(x, y, Element::Water, level),
         Element::AcidSource => update_source(x, y, Element::Acid, level),
         Element::OilSource => update_source(x, y, Element::Oil, level),
         Element::LavaSource => update_source(x, y, Element::Lava, level),
         Element::FireSource => update_source(x, y, Element::Fire, level),
-        Element::Wood => false,
-        Element::Rock => false,
-        Element::Indestructible => false,
-        Element::Air => false,
     };
     if !marked_as_visited {
         level.set_visited(x, y);
@@ -443,5 +444,72 @@ fn update_source(x: usize, y: usize, element: Element, level: &mut SandBox) -> b
         level.set_element(x, y + 1, element);
         return true;
     }
+    false
+}
+
+fn update_air(x: usize, y: usize, level: &mut SandBox) -> bool {
+    let mut living_neighbours = 0;
+    if level.get(x - 1, y - 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x, y - 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x + 1, y - 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x - 1, y).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x + 1, y).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x - 1, y + 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x, y + 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x + 1, y + 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if living_neighbours == 3 {
+        level.set_element(x, y, Element::Life);
+        return true;
+    }
+    false
+}
+
+fn update_life(x: usize, y: usize, level: &mut SandBox) -> bool {
+    let mut living_neighbours = 0;
+    if level.get(x - 1, y - 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x, y - 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x + 1, y - 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x - 1, y).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x + 1, y).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x - 1, y + 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x, y + 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if level.get(x + 1, y + 1).element == Element::Life {
+        living_neighbours += 1;
+    }
+    if living_neighbours < 2 || living_neighbours > 3 {
+        level.set_element(x, y, Element::Air);
+        return true;
+    }
+    // Keep on living
     false
 }

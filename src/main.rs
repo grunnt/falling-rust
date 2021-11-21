@@ -59,7 +59,7 @@ fn setup(
         Extent3d::new(sandbox.width() as u32, sandbox.height() as u32, 1),
         TextureDimension::D2,
         &[0, 0, 0, 255],
-        TextureFormat::Rgba8Unorm,
+        TextureFormat::Rgba8UnormSrgb,
     );
     let th = textures.add(texture);
 
@@ -93,6 +93,7 @@ fn gui_system(
             ui.radio_value(&mut toolbox.element, Element::Oil, "Oil");
             ui.radio_value(&mut toolbox.element, Element::Lava, "Lava");
             ui.radio_value(&mut toolbox.element, Element::Fire, "Fire");
+            ui.radio_value(&mut toolbox.element, Element::Life, "Life");
             ui.radio_value(&mut toolbox.element, Element::WaterSource, "Water source");
             ui.radio_value(&mut toolbox.element, Element::AcidSource, "Acid Source");
             ui.radio_value(&mut toolbox.element, Element::OilSource, "Oil source");
