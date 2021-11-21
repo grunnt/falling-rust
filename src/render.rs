@@ -1,7 +1,4 @@
-use crate::{
-    element::{self, Element},
-    sandbox::SandBox,
-};
+use crate::{element::Element, sandbox::SandBox};
 use bevy::prelude::*;
 
 pub fn level_texture_updater(
