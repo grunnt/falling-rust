@@ -108,6 +108,17 @@ impl Element {
             Element::LavaSource => (128, 32, 8),
         }
     }
+
+    pub fn is_source(&self) -> bool {
+        match self {
+            Element::WaterSource => true,
+            Element::AcidSource => true,
+            Element::OilSource => true,
+            Element::FireSource => true,
+            Element::LavaSource => true,
+            _ => false,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]

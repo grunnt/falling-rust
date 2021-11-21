@@ -1,4 +1,7 @@
-use crate::{element::Element, sandbox::SandBox};
+use crate::{
+    element::{self, Element},
+    sandbox::SandBox,
+};
 use bevy::prelude::*;
 
 pub fn level_texture_updater(
@@ -33,6 +36,13 @@ pub fn level_texture_updater(
                     let green = color.1 as f32 * factor;
                     let blue = color.2 as f32 * factor;
                     (red as u8, green as u8, blue as u8, 255)
+                } else if cell.element.is_source() {
+                    (
+                        color.0.min(127) * 2,
+                        color.1.min(127) * 2,
+                        color.2.min(127) * 2,
+                        255,
+                    )
                 } else {
                     (color.0, color.1, color.2, 255)
                 };
