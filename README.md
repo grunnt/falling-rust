@@ -6,7 +6,7 @@ A falling-sand toy written using Rust, Bevy and egui.
 
 ## How to run
 
-A release version for Windows ia available at [GitHub releases](https://github.com/grunnt/falling-rust/releases).
+A release version for Windows is available at [GitHub releases](https://github.com/grunnt/falling-rust/releases).
 
 ## How to run from the code
 
