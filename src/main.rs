@@ -91,6 +91,7 @@ fn gui_system(
             ui.radio_value(&mut toolbox.element, Element::Air, "Air");
             ui.radio_value(&mut toolbox.element, Element::Sand, "Sand");
             ui.radio_value(&mut toolbox.element, Element::Wood, "Wood");
+            ui.radio_value(&mut toolbox.element, Element::Iron, "Iron");
             ui.radio_value(&mut toolbox.element, Element::Rock, "Rock");
             ui.radio_value(&mut toolbox.element, Element::Water, "Water");
             ui.radio_value(&mut toolbox.element, Element::Acid, "Acid");

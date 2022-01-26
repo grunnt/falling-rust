@@ -61,6 +61,8 @@ fn update_cell(x: usize, y: usize, level: &mut SandBox) {
         Element::Lava => update_lava(x, y, level),
         Element::Smoke => update_smoke(x, y, level),
         Element::Life => update_life(x, y, level),
+        Element::Iron => update_iron(x, y, level),
+        Element::Rust => update_sand(x, y, level),
         Element::Wood => false,
         Element::Rock => false,
         Element::Indestructible => false,
@@ -435,6 +437,24 @@ fn update_smoke(x: usize, y: usize, level: &mut SandBox) -> bool {
     if neighbour_element == Element::Fire || neighbour_element.form() == ElementForm::Liquid {
         level.clear_cell(x, y);
         return true;
+    }
+    false
+}
+
+fn update_iron(x: usize, y: usize, level: &mut SandBox) -> bool {
+    let rusty_neighbour = level.get(x - 1, y).element.causes_rust()
+        || level.get(x + 1, y).element.causes_rust()
+        || level.get(x, y - 1).element.causes_rust()
+        || level.get(x, y + 1).element.causes_rust();
+
+    if rusty_neighbour {
+        // Rust iron by reducing its strength somewhat randomly
+        let random = level.random(5);
+        if random > 2 && !level.reduce_strength(x, y) {
+            // Turn into rust
+            level.set_element(x, y, Element::Rust);
+            return true;
+        }
     }
     false
 }

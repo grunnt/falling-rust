@@ -1,6 +1,7 @@
 use crate::{element::Element, sandbox::SandBox};
 use bevy::prelude::*;
 
+// "Render" the world by copying the element cells to pixels
 pub fn level_texture_updater(mut images: ResMut<Assets<Image>>, level: Res<SandBox>) {
     let image = images.get_mut(&level.image_handle).unwrap();
     for y in 0..level.height() {
@@ -9,7 +10,7 @@ pub fn level_texture_updater(mut images: ResMut<Assets<Image>>, level: Res<SandB
             let color = cell.element.color();
             let randomize_color_factor = cell.element.randomize_color_factor();
             let color = if cell.element == Element::Smoke {
-                let factor = 1.0 - (cell.strength as f32 / Element::Smoke.strength() as f32);
+                let factor = 1.0 - (cell.strength as f32 / cell.element.strength() as f32);
                 let red = color.0 as f32 * factor;
                 let green = color.1 as f32 * factor;
                 let blue = color.2 as f32 * factor;

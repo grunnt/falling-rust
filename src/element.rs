@@ -8,6 +8,8 @@ pub enum Element {
     Acid,
     Drain,
     Wood,
+    Iron,
+    Rust,
     Fire,
     Ash,
     Oil,
@@ -34,6 +36,7 @@ impl Element {
             Element::Smoke => ElementForm::Gas,
             Element::Sand => ElementForm::Powder,
             Element::Ash => ElementForm::Powder,
+            Element::Rust => ElementForm::Powder,
             _ => ElementForm::Solid,
         }
     }
@@ -44,6 +47,7 @@ impl Element {
             Element::Wood => true,
             Element::Ash => true,
             Element::Life => true,
+            Element::Rust => true,
             _ => false,
         }
     }
@@ -57,6 +61,14 @@ impl Element {
         }
     }
 
+    pub fn causes_rust(&self) -> bool {
+        match self {
+            Element::Water => true,
+            Element::Rust => true,
+            _ => false,
+        }
+    }
+
     pub fn strength(&self) -> u8 {
         match self {
             Element::Fire => 16,
@@ -66,6 +78,7 @@ impl Element {
             Element::Lava => 64,
             Element::Smoke => 32,
             Element::Sand => 8,
+            Element::Iron => 64,
             _ => 0,
         }
     }
@@ -81,6 +94,8 @@ impl Element {
             Element::Ash => 1.0,
             Element::Oil => 0.25,
             Element::Lava => 0.25,
+            Element::Iron => 0.15,
+            Element::Rust => 0.35,
             _ => 0.0,
         }
     }
@@ -90,6 +105,8 @@ impl Element {
             Element::Air => (33, 122, 238),
             Element::Rock => (128, 128, 128),
             Element::Wood => (119, 64, 27),
+            Element::Iron => (151, 152, 157),
+            Element::Rust => (184, 83, 46),
             Element::Sand => (219, 176, 125),
             Element::Water => (16, 16, 128),
             Element::Drain => (0, 0, 0),
