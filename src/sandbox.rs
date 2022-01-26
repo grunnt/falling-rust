@@ -1,4 +1,5 @@
 use crate::{cell::*, element::Element};
+use bevy::prelude::*;
 use rand::Rng;
 use rand_xoshiro::{rand_core::SeedableRng, Xoshiro256Plus};
 
@@ -8,11 +9,12 @@ pub struct SandBox {
     cells: Vec<Cell>,
     visited_state: bool,
     random: Xoshiro256Plus,
+    pub image_handle: Handle<Image>,
 }
 
 impl SandBox {
-    pub fn new(width: usize, height: usize) -> Self {
-        let mut world = SandBox::empty(width, height);
+    pub fn new(width: usize, height: usize, image_handle: Handle<Image>) -> Self {
+        let mut world = SandBox::empty(width, height, image_handle);
         // Set indestructible pixels at the border to ease computations
         for x in 0..world.width() {
             world.set_element(x, 0, Element::Indestructible);
@@ -25,7 +27,7 @@ impl SandBox {
         world
     }
 
-    fn empty(width: usize, height: usize) -> Self {
+    fn empty(width: usize, height: usize, image_handle: Handle<Image>) -> Self {
         SandBox {
             width,
             height,
@@ -40,6 +42,7 @@ impl SandBox {
             ],
             visited_state: false,
             random: Xoshiro256Plus::from_entropy(),
+            image_handle,
         }
     }
 
@@ -147,11 +150,5 @@ impl SandBox {
     #[inline(always)]
     fn index(&self, x: usize, y: usize) -> usize {
         x + y * self.width
-    }
-}
-
-impl Default for SandBox {
-    fn default() -> Self {
-        SandBox::new(512, 512)
     }
 }

@@ -9,10 +9,8 @@ mod sandbox;
 mod simulation;
 mod toolbox;
 
-use bevy::{
-    prelude::*,
-    render::texture::{Extent3d, TextureDimension, TextureFormat},
-};
+use bevy::prelude::*;
+use bevy::render::render_resource::*;
 use bevy_egui::{egui, EguiContext, EguiPlugin};
 use camera::camera_controller;
 use element::Element;
@@ -23,7 +21,7 @@ use simulation::{level_updater, Simulation};
 use toolbox::{Tool, ToolBox};
 
 fn main() {
-    App::build()
+    App::new()
         .insert_resource(WindowDescriptor {
             title: "Falling-Rust".to_string(),
             width: 1024.,
@@ -35,39 +33,43 @@ fn main() {
         .add_plugin(EguiPlugin)
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .init_resource::<MouseInputState>()
-        .init_resource::<SandBox>()
         .init_resource::<Simulation>()
         .init_resource::<ToolBox>()
-        .add_startup_system(setup.system())
-        .add_system(gui_system.system().label("gui"))
-        .add_system(level_updater.system())
-        .add_system(level_texture_updater.system())
-        .add_system(mouse_input_handler.system())
-        .add_system(camera_controller.system())
-        .add_system(level_editor.system().after("gui"))
+        .add_startup_system(setup)
+        .add_system(gui_system.label("gui"))
+        .add_system(level_updater)
+        .add_system(level_texture_updater)
+        .add_system(mouse_input_handler)
+        .add_system(camera_controller)
+        .add_system(level_editor.after("gui"))
         .run();
 }
 
-fn setup(
-    mut commands: Commands,
-    mut textures: ResMut<Assets<Texture>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-    sandbox: Res<SandBox>,
-) {
+fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
+    // Create an empty texture to fill with our pixels
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
-
-    // Create texture for displaying
-    let texture = Texture::new_fill(
-        Extent3d::new(sandbox.width() as u32, sandbox.height() as u32, 1),
+    let width = 512;
+    let height = 512;
+    let image = Image::new_fill(
+        Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        },
         TextureDimension::D2,
-        &[0, 0, 0, 255],
+        &[255, 0, 0, 255],
         TextureFormat::Rgba8UnormSrgb,
     );
-    let th = textures.add(texture);
+    let image_handle = images.add(image);
+    commands.insert_resource(SandBox::new(
+        width as usize,
+        height as usize,
+        image_handle.clone(),
+    ));
 
     // Now spawn the sprite for the level
     commands.spawn().insert_bundle(SpriteBundle {
-        material: materials.add(th.into()),
+        texture: image_handle,
         transform: Transform {
             translation: Vec3::new(0.0, 0.0, 0.0),
             ..Default::default()
