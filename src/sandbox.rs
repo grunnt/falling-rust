@@ -12,6 +12,8 @@ pub struct SandBox {
     pub image_handle: Handle<Image>,
 }
 
+pub const AROUND: [(i32, i32); 4] = [(-1, 0), (1, 0), (0, -1), (0, 1)];
+
 impl SandBox {
     pub fn new(width: usize, height: usize, image_handle: Handle<Image>) -> Self {
         let mut world = SandBox::empty(width, height, image_handle);

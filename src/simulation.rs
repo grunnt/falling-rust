@@ -461,24 +461,21 @@ fn update_iron(x: usize, y: usize, level: &mut SandBox) -> bool {
 }
 
 fn update_plant(x: usize, y: usize, level: &mut SandBox) -> bool {
+    let (xi, yi) = (x as i32, y as i32);
     let plant_neighbor = level.get(x - 1, y).element.grows_plant()
         || level.get(x + 1, y).element.grows_plant()
         || level.get(x, y - 1).element.grows_plant()
         || level.get(x, y + 1).element.grows_plant();
-    const CHANCE: usize = 1;
     if plant_neighbor {
-        if level.random(10) <= CHANCE {
-            level.set_element(x - 1, y, Element::Plant)
-        };
-        if level.random(10) <= CHANCE {
-            level.set_element(x + 1, y, Element::Plant)
-        };
-        if level.random(10) <= CHANCE {
-            level.set_element(x, y - 1, Element::Plant)
-        };
-        if level.random(10) <= CHANCE {
-            level.set_element(x, y + 1, Element::Plant)
-        };
+        for (dx, dy) in AROUND {
+            if level.random(10) <= 1 {
+                level.set_element(
+                    (xi + dx).try_into().unwrap(),
+                    (yi + dy).try_into().unwrap(),
+                    Element::Plant,
+                )
+            }
+        }
         return true;
     }
     false
