@@ -461,24 +461,14 @@ fn update_iron(x: usize, y: usize, level: &mut SandBox) -> bool {
 }
 
 fn update_plant(x: usize, y: usize, level: &mut SandBox) -> bool {
-    let (xi, yi) = (x as i32, y as i32);
-    let plant_neighbor = level.get(x - 1, y).element.grows_plant()
-        || level.get(x + 1, y).element.grows_plant()
-        || level.get(x, y - 1).element.grows_plant()
-        || level.get(x, y + 1).element.grows_plant();
-    if plant_neighbor {
-        for (dx, dy) in AROUND {
-            if level.random(10) <= 1 {
-                level.set_element(
-                    (xi + dx).try_into().unwrap(),
-                    (yi + dy).try_into().unwrap(),
-                    Element::Plant,
-                )
-            }
+    let mut count = 0;
+    for (xx, yy) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
+        if level.random(10) <= 1 && level.get(xx, yy).element.grows_plant() {
+            level.set_element(xx, yy, Element::Plant);
+            count += 1;
         }
-        return true;
     }
-    false
+    count > 0
 }
 
 fn update_source(x: usize, y: usize, element: Element, level: &mut SandBox) -> bool {
