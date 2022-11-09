@@ -16,6 +16,7 @@ pub enum Element {
     Lava,
     Smoke,
     Life,
+    Plant,
     WaterSource,
     AcidSource,
     OilSource,
@@ -48,6 +49,7 @@ impl Element {
             Element::Ash => true,
             Element::Life => true,
             Element::Rust => true,
+            Element::Plant => true,
             _ => false,
         }
     }
@@ -57,6 +59,7 @@ impl Element {
             Element::Wood => true,
             Element::Oil => true,
             Element::Life => true,
+            Element::Plant => true,
             _ => false,
         }
     }
@@ -65,6 +68,13 @@ impl Element {
         match self {
             Element::Water => true,
             Element::Rust => true,
+            _ => false,
+        }
+    }
+
+    pub fn grows_plant(&self) -> bool {
+        match self {
+            Element::Water => true,
             _ => false,
         }
     }
@@ -79,6 +89,7 @@ impl Element {
             Element::Smoke => 32,
             Element::Sand => 8,
             Element::Iron => 64,
+            Element::Plant => 2,
             _ => 0,
         }
     }
@@ -96,6 +107,7 @@ impl Element {
             Element::Lava => 0.25,
             Element::Iron => 0.15,
             Element::Rust => 0.35,
+            Element::Plant => 0.1,
             _ => 0.0,
         }
     }
@@ -116,6 +128,7 @@ impl Element {
             Element::Oil => (64, 32, 64),
             Element::Lava => (160, 64, 32),
             Element::Life => (255, 255, 255),
+            Element::Plant => (60, 200, 30),
             Element::Indestructible => (64, 40, 40),
             Element::Smoke => (9, 36, 68),
             Element::WaterSource => (8, 8, 128),

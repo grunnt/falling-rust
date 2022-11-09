@@ -63,6 +63,7 @@ fn update_cell(x: usize, y: usize, level: &mut SandBox) {
         Element::Life => update_life(x, y, level),
         Element::Iron => update_iron(x, y, level),
         Element::Rust => update_sand(x, y, level),
+        Element::Plant => update_plant(x, y, level),
         Element::Wood => false,
         Element::Rock => false,
         Element::Indestructible => false,
@@ -457,6 +458,17 @@ fn update_iron(x: usize, y: usize, level: &mut SandBox) -> bool {
         }
     }
     false
+}
+
+fn update_plant(x: usize, y: usize, level: &mut SandBox) -> bool {
+    let mut count = 0;
+    for (xx, yy) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
+        if level.random(10) <= 1 && level.get(xx, yy).element.grows_plant() {
+            level.set_element(xx, yy, Element::Plant);
+            count += 1;
+        }
+    }
+    count > 0
 }
 
 fn update_source(x: usize, y: usize, element: Element, level: &mut SandBox) -> bool {

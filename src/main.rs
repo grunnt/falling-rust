@@ -99,6 +99,7 @@ fn gui_system(
             ui.radio_value(&mut toolbox.element, Element::Lava, "Lava");
             ui.radio_value(&mut toolbox.element, Element::Fire, "Fire");
             ui.radio_value(&mut toolbox.element, Element::Life, "Life");
+            ui.radio_value(&mut toolbox.element, Element::Plant, "Plant");
             ui.radio_value(&mut toolbox.element, Element::WaterSource, "Water source");
             ui.radio_value(&mut toolbox.element, Element::AcidSource, "Acid Source");
             ui.radio_value(&mut toolbox.element, Element::OilSource, "Oil source");
