@@ -26,7 +26,7 @@ fn main() {
             title: "Falling-Rust".to_string(),
             width: 1024.,
             height: 600.,
-            vsync: true,
+            present_mode: bevy::window::PresentMode::Fifo,
             ..Default::default()
         })
         .add_plugins(DefaultPlugins)
@@ -79,14 +79,14 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
 }
 
 fn gui_system(
-    egui_context: ResMut<EguiContext>,
+    mut egui_context: ResMut<EguiContext>,
     mut toolbox: ResMut<ToolBox>,
     mut simulation: ResMut<Simulation>,
     mut level: ResMut<SandBox>,
 ) {
     egui::SidePanel::left("left_tools")
         .min_width(180.0)
-        .show(egui_context.ctx(), |ui| {
+        .show(egui_context.ctx_mut(), |ui| {
             ui.label("Tool element:");
             ui.radio_value(&mut toolbox.element, Element::Air, "Air");
             ui.radio_value(&mut toolbox.element, Element::Sand, "Sand");
@@ -116,7 +116,7 @@ fn gui_system(
             ui.radio_value(&mut toolbox.tool, Tool::SprayCircle, "Spray Circle");
         });
 
-    egui::SidePanel::right("right_tools").show(egui_context.ctx(), |ui| {
+    egui::SidePanel::right("right_tools").show(egui_context.ctx_mut(), |ui| {
         ui.label("Simulation:");
         ui.checkbox(&mut simulation.running, "Running");
         if ui.button("Step").clicked() {
@@ -133,12 +133,13 @@ fn gui_system(
 
 fn level_editor(
     mouse: Res<MouseInputState>,
-    egui_context: Res<EguiContext>,
+    mut egui_context: ResMut<EguiContext>,
     mut toolbox: ResMut<ToolBox>,
     mut level: ResMut<SandBox>,
     mut query: Query<&Transform>,
 ) {
-    if egui_context.ctx().wants_pointer_input() || egui_context.ctx().wants_keyboard_input() {
+    if egui_context.ctx_mut().wants_pointer_input() || egui_context.ctx_mut().wants_keyboard_input()
+    {
         // GUI gets priority for input events
         return;
     }
