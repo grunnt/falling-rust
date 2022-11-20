@@ -64,6 +64,7 @@ fn update_cell(x: usize, y: usize, level: &mut SandBox) {
         Element::Iron => update_iron(x, y, level),
         Element::Rust => update_sand(x, y, level),
         Element::Plant => update_plant(x, y, level),
+        Element::Seed => update_seed(x, y, level),
         Element::Wood => false,
         Element::Rock => false,
         Element::Indestructible => false,
@@ -101,7 +102,11 @@ fn update_sand(x: usize, y: usize, level: &mut SandBox) -> bool {
     }
     let neighbour_x = level.random_neighbour_x(x);
     let neighbour_element = level.get(neighbour_x, y + 1).element;
-    if neighbour_element == Element::Air || neighbour_element == Element::Water {
+    if neighbour_element == Element::Air
+        || neighbour_element == Element::Water
+        || neighbour_element == Element::Fire
+        || neighbour_element == Element::Oil
+    {
         // Slide to random neighbour diagonally
         level.swap(x, y, neighbour_x, y + 1);
         return true;
@@ -328,7 +333,7 @@ fn update_drain(x: usize, y: usize, level: &mut SandBox) -> bool {
 fn update_fire(x: usize, y: usize, level: &mut SandBox) -> bool {
     let random = level.random(5);
     // Reduce fire strength over time
-    if random > 3 && !level.reduce_strength(x, y) {
+    if random > 3 && !level.reduce_strength(x, y, 1) {
         level.set_element(x, y, Element::Smoke);
         return true;
     }
@@ -420,7 +425,7 @@ fn touch_lava(
 fn update_smoke(x: usize, y: usize, level: &mut SandBox) -> bool {
     let random = level.random(5);
     // Reduce fire strength over time
-    if random > 2 && !level.reduce_strength(x, y) {
+    if random > 2 && !level.reduce_strength(x, y, 1) {
         level.clear_cell(x, y);
         return true;
     }
@@ -451,7 +456,7 @@ fn update_iron(x: usize, y: usize, level: &mut SandBox) -> bool {
     if rusty_neighbour {
         // Rust iron by reducing its strength somewhat randomly
         let random = level.random(5);
-        if random > 2 && !level.reduce_strength(x, y) {
+        if random > 2 && !level.reduce_strength(x, y, 1) {
             // Turn into rust
             level.set_element(x, y, Element::Rust);
             return true;
@@ -460,15 +465,107 @@ fn update_iron(x: usize, y: usize, level: &mut SandBox) -> bool {
     false
 }
 
-fn update_plant(x: usize, y: usize, level: &mut SandBox) -> bool {
-    let mut count = 0;
-    for (xx, yy) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
-        if level.random(10) <= 1 && level.get(xx, yy).element.grows_plant() {
-            level.set_element(xx, yy, Element::Plant);
-            count += 1;
+fn update_seed(x: usize, y: usize, level: &mut SandBox) -> bool {
+    // See if we need to fall down or slide diagonally
+    let element_below = level.get(x, y + 1).element;
+    if element_below == Element::Air
+        || element_below == Element::Water
+        || element_below == Element::Fire
+        || element_below == Element::Oil
+    {
+        // Fall down
+        level.swap(x, y, x, y + 1);
+        return true;
+    }
+
+    let neighbour_x = level.random_neighbour_x(x);
+    let neighbour_element = level.get(neighbour_x, y + 1).element;
+    if neighbour_element == Element::Air
+        || neighbour_element == Element::Water
+        || neighbour_element == Element::Fire
+        || neighbour_element == Element::Oil
+    {
+        // Slide to random neighbour diagonally
+        level.swap(x, y, neighbour_x, y + 1);
+        return true;
+    }
+
+    // Check if we have water and nutrition
+    let mut nutrition = false;
+    let mut water = false;
+    for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
+        let neighbour_element = level.get(nx, ny).element;
+        if !nutrition && neighbour_element.plant_nutrition() {
+            nutrition = true;
+        }
+        if !water && neighbour_element.plant_watering() {
+            water = true;
         }
     }
-    count > 0
+
+    if nutrition && water {
+        // Convert to a new plant
+        level.set_element_with_strength(x, y, Element::Plant, Element::Seed.strength());
+        level.get_mut(x, y).variant = Element::Seed.strength();
+        true
+    } else {
+        false
+    }
+}
+
+fn update_plant(x: usize, y: usize, level: &mut SandBox) -> bool {
+    let random = level.random(1000);
+    let (cell_strength, cell_variant) = {
+        let cell = level.get(x, y);
+        (cell.strength, cell.variant)
+    };
+    if cell_variant <= 1 {
+        // Sometimes turns into seed
+        if random > 990 {
+            level.set_element(x, y, Element::Seed);
+        }
+    }
+
+    // Are we still attached to the plant?
+    let mut attached = false;
+    if cell_variant == Element::Seed.strength() {
+        // Root cell
+        attached = true;
+    } else {
+        for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y + 1), (x, y + 1)] {
+            let neighbour = level.get(nx, ny);
+            if neighbour.element == Element::Plant && neighbour.variant > cell_variant {
+                attached = true;
+                break;
+            }
+        }
+    }
+    if !attached {
+        // Not attached, so die
+        level.set_element(x, y, Element::Ash);
+        return true;
+    }
+    if cell_strength <= 1 {
+        // Not growing anymore
+        return false;
+    }
+    // Plant is still growing
+    if random > 970 {
+        let random = random - 980;
+        let (nx, ny) = match random {
+            0 | 1 => (x - 1, y),
+            2 | 3 => (x + 1, y),
+            _ => (x, y - 1),
+        };
+        let other_element = level.get(nx, ny).element;
+        let new_cell_strength = cell_strength - 1;
+        if other_element.allows_plant_growth() {
+            level.set_element_with_strength(nx, ny, Element::Plant, new_cell_strength);
+            level.get_mut(nx, ny).variant = cell_variant - 1;
+            level.reduce_strength(x, y, new_cell_strength);
+        }
+    }
+    false
 }
 
 fn update_source(x: usize, y: usize, element: Element, level: &mut SandBox) -> bool {

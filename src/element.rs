@@ -16,6 +16,7 @@ pub enum Element {
     Lava,
     Smoke,
     Life,
+    Seed,
     Plant,
     WaterSource,
     AcidSource,
@@ -38,6 +39,7 @@ impl Element {
             Element::Sand => ElementForm::Powder,
             Element::Ash => ElementForm::Powder,
             Element::Rust => ElementForm::Powder,
+            Element::Seed => ElementForm::Powder,
             _ => ElementForm::Solid,
         }
     }
@@ -50,6 +52,7 @@ impl Element {
             Element::Life => true,
             Element::Rust => true,
             Element::Plant => true,
+            Element::Seed => true,
             _ => false,
         }
     }
@@ -72,8 +75,28 @@ impl Element {
         }
     }
 
-    pub fn grows_plant(&self) -> bool {
+    pub fn plant_nutrition(&self) -> bool {
         match self {
+            Element::Sand => true,
+            Element::Ash => true,
+            Element::Seed => true,
+            Element::Plant => true,
+            _ => false,
+        }
+    }
+
+    pub fn plant_watering(&self) -> bool {
+        match self {
+            Element::Water => true,
+            _ => false,
+        }
+    }
+
+    pub fn allows_plant_growth(&self) -> bool {
+        match self {
+            Element::Air => true,
+            Element::Sand => true,
+            Element::Ash => true,
             Element::Water => true,
             _ => false,
         }
@@ -89,7 +112,7 @@ impl Element {
             Element::Smoke => 32,
             Element::Sand => 8,
             Element::Iron => 64,
-            Element::Plant => 2,
+            Element::Seed => 32,
             _ => 0,
         }
     }
@@ -107,7 +130,8 @@ impl Element {
             Element::Lava => 0.25,
             Element::Iron => 0.15,
             Element::Rust => 0.35,
-            Element::Plant => 0.1,
+            Element::Plant => 0.7,
+            Element::Seed => 0.1,
             _ => 0.0,
         }
     }
@@ -129,6 +153,7 @@ impl Element {
             Element::Lava => (160, 64, 32),
             Element::Life => (255, 255, 255),
             Element::Plant => (60, 200, 30),
+            Element::Seed => (170, 220, 130),
             Element::Indestructible => (64, 40, 40),
             Element::Smoke => (9, 36, 68),
             Element::WaterSource => (8, 8, 128),

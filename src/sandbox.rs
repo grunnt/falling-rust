@@ -56,11 +56,15 @@ impl SandBox {
         &mut self.cells[index]
     }
 
-    pub fn reduce_strength(&mut self, x: usize, y: usize) -> bool {
+    pub fn reduce_strength(&mut self, x: usize, y: usize, amount: u8) -> bool {
         let index = self.index(x, y);
         let cell = &mut self.cells[index];
-        if cell.strength > 1 {
-            cell.strength -= 1;
+        if cell.strength > 0 {
+            cell.strength = if cell.strength > amount {
+                cell.strength - amount
+            } else {
+                0
+            };
             true
         } else {
             false
@@ -71,7 +75,13 @@ impl SandBox {
         self.set_element(x, y, Element::Air);
     }
 
-    pub fn set_element(&mut self, x: usize, y: usize, element: Element) {
+    pub fn set_element_with_strength(
+        &mut self,
+        x: usize,
+        y: usize,
+        element: Element,
+        strength: u8,
+    ) {
         let index = self.index(x, y);
         let mut cell = &mut self.cells[index];
         if cell.element == Element::Indestructible {
@@ -80,10 +90,14 @@ impl SandBox {
         }
         cell.element = element;
         cell.visited = self.visited_state;
-        cell.strength = element.strength();
+        cell.strength = strength;
         if element.randomize_color_factor() > 0.0 {
             cell.variant = self.random.gen();
         }
+    }
+
+    pub fn set_element(&mut self, x: usize, y: usize, element: Element) {
+        self.set_element_with_strength(x, y, element, element.strength());
     }
 
     pub fn swap(&mut self, x: usize, y: usize, x2: usize, y2: usize) {
