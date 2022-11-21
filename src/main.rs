@@ -47,7 +47,7 @@ fn main() {
 
 fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     // Create an empty texture to fill with our pixels
-    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(Camera2dBundle::default());
     let width = 512;
     let height = 512;
     let image = Image::new_fill(

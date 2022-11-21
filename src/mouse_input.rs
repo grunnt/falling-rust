@@ -1,7 +1,7 @@
 use bevy::{
     input::{
         mouse::{MouseButtonInput, MouseMotion, MouseWheel},
-        ElementState,
+        ButtonState,
     },
     math::Vec3Swizzles,
     prelude::*,
@@ -40,7 +40,7 @@ pub fn mouse_input_handler(
     state.world_position_delta = Vec2::ZERO;
 
     for event in mouse_button_input_events.iter() {
-        let button_down = event.state == ElementState::Pressed;
+        let button_down = event.state == ButtonState::Pressed;
         match event.button {
             MouseButton::Left => {
                 if button_down && !state.left_button_down {

@@ -7,7 +7,7 @@ use crate::mouse_input::MouseInputState;
 
 pub fn camera_controller(
     state: Res<MouseInputState>,
-    mut cameras: Query<(&mut GlobalTransform, &OrthographicProjection), With<Camera>>,
+    mut cameras: Query<(&mut Transform, &OrthographicProjection), With<Camera>>,
 ) {
     // Zoom using mouse wheel
     if state.wheel_delta != 0.0 {
