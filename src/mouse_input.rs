@@ -8,7 +8,7 @@ use bevy::{
     render::camera::{Camera, OrthographicProjection},
 };
 
-#[derive(Default)]
+#[derive(Default, Resource)]
 pub struct MouseInputState {
     pub left_button_down: bool,
     pub middle_button_down: bool,
@@ -78,13 +78,13 @@ pub fn mouse_input_handler(
 
     if let Some((camera, projection)) = cameras.iter().next() {
         state.world_position = camera
-            .mul_vec3(
+            .transform_point(
                 state.position.extend(0.0)
                     + Vec3::new(projection.left, projection.bottom, projection.near),
             )
             .xy();
         state.world_position_delta = camera
-            .mul_vec3(
+            .transform_point(
                 state.position_delta.extend(0.0)
                     + Vec3::new(projection.left, projection.bottom, projection.near),
             )

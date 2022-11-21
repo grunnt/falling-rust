@@ -1,4 +1,5 @@
 use crate::{element::Element, sandbox::SandBox};
+use bevy::prelude::Resource;
 use rand::Rng;
 use rand_xoshiro::{rand_core::SeedableRng, Xoshiro256Plus};
 
@@ -9,6 +10,7 @@ pub enum Tool {
     SprayCircle,
 }
 
+#[derive(Resource)]
 pub struct ToolBox {
     pub tool: Tool,
     pub element: Element,

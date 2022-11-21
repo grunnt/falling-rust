@@ -3,7 +3,7 @@ use crate::sandbox::*;
 use bevy::prelude::*;
 use bevy::utils::Instant;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Resource)]
 pub struct Simulation {
     pub running: bool,
     pub step: bool,

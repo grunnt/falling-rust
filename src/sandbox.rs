@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use rand::Rng;
 use rand_xoshiro::{rand_core::SeedableRng, Xoshiro256Plus};
 
+#[derive(Resource)]
 pub struct SandBox {
     width: usize,
     height: usize,

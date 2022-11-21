@@ -22,14 +22,20 @@ use toolbox::{Tool, ToolBox};
 
 fn main() {
     App::new()
-        .insert_resource(WindowDescriptor {
-            title: "Falling-Rust".to_string(),
-            width: 1024.,
-            height: 600.,
-            present_mode: bevy::window::PresentMode::Fifo,
-            ..Default::default()
-        })
-        .add_plugins(DefaultPlugins)
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    window: WindowDescriptor {
+                        title: "Falling-Rust".to_string(),
+                        width: 1024.,
+                        height: 600.,
+                        present_mode: bevy::window::PresentMode::Fifo,
+                        ..default()
+                    },
+                    ..default()
+                })
+                .set(ImagePlugin::default_nearest()),
+        )
         .add_plugin(EguiPlugin)
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .init_resource::<MouseInputState>()
@@ -47,7 +53,7 @@ fn main() {
 
 fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     // Create an empty texture to fill with our pixels
-    commands.spawn_bundle(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default());
     let width = 512;
     let height = 512;
     let image = Image::new_fill(
@@ -68,7 +74,7 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     ));
 
     // Now spawn the sprite for the level
-    commands.spawn().insert_bundle(SpriteBundle {
+    commands.spawn_empty().insert(SpriteBundle {
         texture: image_handle,
         transform: Transform {
             translation: Vec3::new(0.0, 0.0, 0.0),
