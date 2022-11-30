@@ -1,8 +1,8 @@
 use crate::{element::Element, sandbox::SandBox};
 use bevy::prelude::*;
 
-// "Render" the world by copying the element cells to pixels
-pub fn level_texture_updater(mut images: ResMut<Assets<Image>>, level: Res<SandBox>) {
+// "Render" the world by copying the element cells to pixels on a texture
+pub fn render_system(mut images: ResMut<Assets<Image>>, level: Res<SandBox>) {
     let image = images.get_mut(&level.image_handle).unwrap();
     for y in 0..level.height() {
         for x in 0..level.width() {

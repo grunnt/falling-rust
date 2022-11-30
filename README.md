@@ -17,3 +17,22 @@ The simulation is quite CPU intensive, so make sure to run this in release mode:
 ```
 cargo run --release
 ```
+
+## How to build for the web
+
+Falling-rust can be built as a WASM binary as well, which allows it to be run inside a webpage.
+
+You will need to have the `wasm32-unknown-unknown` target installed. This is easily done using rustup:
+```
+rustup target add wasm32-unknown-unknown
+```
+
+Then falling-rust needs to be compiled for wasm:
+```
+cargo build --release --target wasm32-unknown-unknown
+```
+
+And finally you can generate bindings for javascript (and an index.html page) using `wasm-bindgen`:
+```
+wasm-bindgen --out-dir ./wasm --target web ./target/wasm32-unknown-unknown/release/falling-rust.wasm
+```

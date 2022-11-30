@@ -20,7 +20,7 @@ impl Default for Simulation {
     }
 }
 
-pub fn level_updater(mut level: ResMut<SandBox>, mut simulation: ResMut<Simulation>) {
+pub fn simulation_system(mut level: ResMut<SandBox>, mut simulation: ResMut<Simulation>) {
     let start = Instant::now();
     if simulation.running || simulation.step {
         simulation.step = false;

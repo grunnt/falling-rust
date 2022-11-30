@@ -15,17 +15,17 @@ pub struct SandBox {
 
 impl SandBox {
     pub fn new(width: usize, height: usize, image_handle: Handle<Image>) -> Self {
-        let mut world = SandBox::empty(width, height, image_handle);
+        let mut sandbox = SandBox::empty(width, height, image_handle);
         // Set indestructible pixels at the border to ease computations
-        for x in 0..world.width() {
-            world.set_element(x, 0, Element::Indestructible);
-            world.set_element(x, world.height() - 1, Element::Indestructible);
+        for x in 0..sandbox.width() {
+            sandbox.set_element(x, 0, Element::Indestructible);
+            sandbox.set_element(x, sandbox.height() - 1, Element::Indestructible);
         }
-        for y in 0..world.height() {
-            world.set_element(0, y, Element::Indestructible);
-            world.set_element(world.width() - 1, y, Element::Indestructible);
+        for y in 0..sandbox.height() {
+            sandbox.set_element(0, y, Element::Indestructible);
+            sandbox.set_element(sandbox.width() - 1, y, Element::Indestructible);
         }
-        world
+        sandbox
     }
 
     fn empty(width: usize, height: usize, image_handle: Handle<Image>) -> Self {
