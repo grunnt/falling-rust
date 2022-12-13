@@ -59,7 +59,7 @@ pub fn mouse_editor_input(
             state.middle_button_down = event.state == ButtonState::Pressed;
         }
         if event.button == MouseButton::Right {
-            state.middle_button_down = event.state == ButtonState::Pressed;
+            state.right_button_down = event.state == ButtonState::Pressed;
         }
     }
 
