@@ -44,7 +44,7 @@ fn main() {
         .init_resource::<Simulation>()
         .init_resource::<ToolBox>()
         .add_startup_system(setup)
-        .add_system(gui_system.label("gui"))
+        .add_system(gui_system)
         .add_system(simulation_system)
         .add_system(render_system)
         .add_system(mouse_editor_input)
@@ -54,8 +54,11 @@ fn main() {
 fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     // Create an empty texture to fill with our pixels
     commands.spawn(Camera2dBundle::default());
-    let width = 512;
-    let height = 512;
+
+    new_sandbox(commands, images.as_mut(), 512, 512);
+}
+
+fn new_sandbox(mut commands: Commands, images: &mut Assets<Image>, width: u32, height: u32) {
     let image = Image::new_fill(
         Extent3d {
             width,
@@ -67,19 +70,14 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
         TextureFormat::Rgba8UnormSrgb,
     );
     let image_handle = images.add(image);
-    commands.insert_resource(SandBox::new(
-        width as usize,
-        height as usize,
-        image_handle.clone(),
-    ));
-
-    // Now spawn the sprite for the level
-    commands.spawn_empty().insert(SpriteBundle {
-        texture: image_handle,
-        transform: Transform {
-            translation: Vec3::new(0.0, 0.0, 0.0),
+    commands
+        .spawn(SandBox::new(width as usize, height as usize))
+        .insert(SpriteBundle {
+            texture: image_handle,
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, 0.0),
+                ..Default::default()
+            },
             ..Default::default()
-        },
-        ..Default::default()
-    });
+        });
 }

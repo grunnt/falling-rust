@@ -2,11 +2,21 @@ use crate::{element::Element, sandbox::SandBox};
 use bevy::prelude::*;
 
 // "Render" the world by copying the element cells to pixels on a texture
-pub fn render_system(mut images: ResMut<Assets<Image>>, level: Res<SandBox>) {
-    let image = images.get_mut(&level.image_handle).unwrap();
-    for y in 0..level.height() {
-        for x in 0..level.width() {
-            let cell = level.get(x, y);
+pub fn render_system(
+    mut images: ResMut<Assets<Image>>,
+    mut sandbox: Query<(&mut SandBox, &Handle<Image>)>,
+) {
+    let sandbox = sandbox.get_single_mut();
+    if sandbox.is_err() {
+        // Sandbox not active, so skip this
+        return;
+    }
+    let (sandbox, image_handle) = sandbox.unwrap();
+
+    let image = images.get_mut(image_handle).unwrap();
+    for y in 0..sandbox.height() {
+        for x in 0..sandbox.width() {
+            let cell = sandbox.get(x, y);
             let color = cell.element.color();
             let randomize_color_factor = cell.element.randomize_color_factor();
             let color = if cell.element == Element::Smoke {
@@ -33,7 +43,7 @@ pub fn render_system(mut images: ResMut<Assets<Image>>, level: Res<SandBox>) {
                 (color.0, color.1, color.2, 255)
             };
             let bytes_per_pixel = 4;
-            let index = (x + y * level.width()) * bytes_per_pixel;
+            let index = (x + y * sandbox.width()) * bytes_per_pixel;
             image.data[index] = color.0;
             image.data[index + 1] = color.1;
             image.data[index + 2] = color.2;

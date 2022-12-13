@@ -20,21 +20,28 @@ impl Default for Simulation {
     }
 }
 
-pub fn simulation_system(mut level: ResMut<SandBox>, mut simulation: ResMut<Simulation>) {
+pub fn simulation_system(mut sandbox: Query<&mut SandBox>, mut simulation: ResMut<Simulation>) {
+    let sandbox = sandbox.get_single_mut();
+    if sandbox.is_err() {
+        // Sandbox not active, so skip this
+        return;
+    }
+    let mut sandbox = sandbox.unwrap();
+
     let start = Instant::now();
     if simulation.running || simulation.step {
         simulation.step = false;
-        let visited = level.toggle_visited_state();
-        let (width, height) = (level.width() - 1, level.height() - 1);
+        let visited = sandbox.toggle_visited_state();
+        let (width, height) = (sandbox.width() - 1, sandbox.height() - 1);
         for y in (1..height).rev() {
             // Switch X order every frame to avoid simulation artifacts
             if visited {
                 for x in 1..width {
-                    update_cell(x, y, &mut level);
+                    update_cell(x, y, &mut sandbox);
                 }
             } else {
                 for x in (1..width).rev() {
-                    update_cell(x, y, &mut level);
+                    update_cell(x, y, &mut sandbox);
                 }
             }
         }

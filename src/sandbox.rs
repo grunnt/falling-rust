@@ -3,19 +3,18 @@ use bevy::prelude::*;
 use rand::Rng;
 use rand_xoshiro::{rand_core::SeedableRng, Xoshiro256Plus};
 
-#[derive(Resource)]
+#[derive(Component)]
 pub struct SandBox {
     width: usize,
     height: usize,
     cells: Vec<Cell>,
     visited_state: bool,
     random: Xoshiro256Plus,
-    pub image_handle: Handle<Image>,
 }
 
 impl SandBox {
-    pub fn new(width: usize, height: usize, image_handle: Handle<Image>) -> Self {
-        let mut sandbox = SandBox::empty(width, height, image_handle);
+    pub fn new(width: usize, height: usize) -> Self {
+        let mut sandbox = SandBox::empty(width, height);
         // Set indestructible pixels at the border to ease computations
         for x in 0..sandbox.width() {
             sandbox.set_element(x, 0, Element::Indestructible);
@@ -28,7 +27,7 @@ impl SandBox {
         sandbox
     }
 
-    fn empty(width: usize, height: usize, image_handle: Handle<Image>) -> Self {
+    fn empty(width: usize, height: usize) -> Self {
         SandBox {
             width,
             height,
@@ -43,7 +42,6 @@ impl SandBox {
             ],
             visited_state: false,
             random: Xoshiro256Plus::from_entropy(),
-            image_handle,
         }
     }
 
