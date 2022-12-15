@@ -30,32 +30,10 @@ pub fn mouse_editor_input(
     mut toolbox: ResMut<ToolBox>,
     mut sandbox: Query<&mut SandBox>,
 ) {
-    let sandbox = sandbox.get_single_mut();
-    if sandbox.is_err() {
-        // Sandbox not active, so skip this
-        return;
-    }
-    let mut sandbox = sandbox.unwrap();
-
-    if egui_context.ctx_mut().wants_pointer_input() || egui_context.ctx_mut().wants_keyboard_input()
-    {
-        // GUI gets priority for input events
-        return;
-    }
-
     // Record latest position
     for event in cursor_moved_events.iter() {
         state.position = event.position;
     }
-    let (camera, mut transform, global_transform) = camera.single_mut();
-    let world_pos = camera
-        .viewport_to_world(global_transform, state.position)
-        .unwrap()
-        .origin;
-    state.world_position = Vec2::new(
-        world_pos.x + (sandbox.width() / 2) as f32,
-        (sandbox.height() / 2) as f32 - world_pos.y,
-    );
 
     // Determine button state
     for event in mouse_button_input_events.iter() {
@@ -69,6 +47,30 @@ pub fn mouse_editor_input(
             state.right_button_down = event.state == ButtonState::Pressed;
         }
     }
+
+    if egui_context.ctx_mut().wants_pointer_input() || egui_context.ctx_mut().wants_keyboard_input()
+    {
+        // GUI gets priority for input events
+        return;
+    }
+
+    let sandbox = sandbox.get_single_mut();
+    if sandbox.is_err() {
+        // Sandbox not active, so skip this
+        return;
+    }
+    let mut sandbox = sandbox.unwrap();
+
+    // Update camera position
+    let (camera, mut transform, global_transform) = camera.single_mut();
+    let world_pos = camera
+        .viewport_to_world(global_transform, state.position)
+        .unwrap()
+        .origin;
+    state.world_position = Vec2::new(
+        world_pos.x + (sandbox.width() / 2) as f32,
+        (sandbox.height() / 2) as f32 - world_pos.y,
+    );
 
     // Zoom camera
     for event in mouse_wheel_events.iter() {

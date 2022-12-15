@@ -55,21 +55,31 @@ fn setup(mut commands: Commands, mut images: ResMut<Assets<Image>>) {
     // Create an empty texture to fill with our pixels
     commands.spawn(Camera2dBundle::default());
 
-    new_sandbox(commands, images.as_mut(), 512, 512);
+    new_sandbox(commands, images.as_mut(), None, 256, 256);
 }
 
-fn new_sandbox(mut commands: Commands, images: &mut Assets<Image>, width: u32, height: u32) {
-    let image = Image::new_fill(
-        Extent3d {
-            width,
-            height,
-            depth_or_array_layers: 1,
-        },
-        TextureDimension::D2,
-        &[255, 0, 0, 255],
-        TextureFormat::Rgba8UnormSrgb,
-    );
-    let image_handle = images.add(image);
+fn new_sandbox(
+    mut commands: Commands,
+    images: &mut Assets<Image>,
+    image_handle_opt: Option<Handle<Image>>,
+    width: u32,
+    height: u32,
+) {
+    let image_handle = if let Some(handle) = image_handle_opt {
+        handle
+    } else {
+        let image = Image::new_fill(
+            Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            TextureDimension::D2,
+            &[255, 0, 0, 255],
+            TextureFormat::Rgba8UnormSrgb,
+        );
+        images.add(image)
+    };
     commands
         .spawn(SandBox::new(width as usize, height as usize))
         .insert(SpriteBundle {

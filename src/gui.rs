@@ -1,4 +1,4 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, render::render_resource::Extent3d};
 use bevy_egui::{egui, EguiContext};
 
 use crate::{
@@ -84,14 +84,26 @@ pub fn gui_system(
         if ui.button("New 512x512").clicked() {
             new_size = Some((512, 512));
         }
+        if ui.button("New 1024x1024").clicked() {
+            new_size = Some((1024, 1024));
+        }
         if let Some((width, height)) = new_size {
+            let mut image_handle_opt = None;
             if sandbox_active {
-                let (entity, _sandbox, image_handle) = sandbox.unwrap();
+                let (entity, _sandbox, existing_image_handle) = sandbox.unwrap();
+                // images
+                //     .get_mut(existing_image_handle)
+                //     .unwrap()
+                //     .resize(Extent3d {
+                //         width,
+                //         height,
+                //         depth_or_array_layers: 0,
+                //     });
+                // image_handle_opt = Some(existing_image_handle.clone());
                 commands.entity(entity).despawn();
-                images.remove(image_handle);
             }
 
-            new_sandbox(commands, images.as_mut(), width, height);
+            new_sandbox(commands, images.as_mut(), image_handle_opt, width, height);
         }
     });
 }
