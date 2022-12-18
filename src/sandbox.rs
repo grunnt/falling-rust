@@ -1,5 +1,8 @@
 use crate::{cell::*, element::Element};
-use bevy::prelude::*;
+use bevy::{
+    prelude::*,
+    render::render_resource::{Extent3d, TextureDimension, TextureFormat},
+};
 use rand::Rng;
 use rand_xoshiro::{rand_core::SeedableRng, Xoshiro256Plus};
 
@@ -10,11 +13,12 @@ pub struct SandBox {
     cells: Vec<Cell>,
     visited_state: bool,
     random: Xoshiro256Plus,
+    pub render_time_ms: u128,
 }
 
 impl SandBox {
-    pub fn new(width: usize, height: usize) -> Self {
-        let mut sandbox = SandBox::empty(width, height);
+    pub fn new(width: usize, height: usize, seed_opt: Option<u64>) -> Self {
+        let mut sandbox = SandBox::empty(width, height, seed_opt);
         // Set indestructible pixels at the border to ease computations
         for x in 0..sandbox.width() {
             sandbox.set_element(x, 0, Element::Indestructible);
@@ -27,7 +31,12 @@ impl SandBox {
         sandbox
     }
 
-    fn empty(width: usize, height: usize) -> Self {
+    fn empty(width: usize, height: usize, seed_opt: Option<u64>) -> Self {
+        let random = if let Some(seed) = seed_opt {
+            Xoshiro256Plus::seed_from_u64(seed)
+        } else {
+            Xoshiro256Plus::from_entropy()
+        };
         SandBox {
             width,
             height,
@@ -41,7 +50,8 @@ impl SandBox {
                 width * height
             ],
             visited_state: false,
-            random: Xoshiro256Plus::from_entropy(),
+            random,
+            render_time_ms: 0,
         }
     }
 
@@ -164,4 +174,30 @@ impl SandBox {
     fn index(&self, x: usize, y: usize) -> usize {
         x + y * self.width
     }
+}
+
+pub fn spawn_sandbox(mut commands: Commands, images: &mut Assets<Image>, width: u32, height: u32) {
+    let image_handle = {
+        let image = Image::new_fill(
+            Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            TextureDimension::D2,
+            &[255, 0, 0, 255],
+            TextureFormat::Rgba8UnormSrgb,
+        );
+        images.add(image)
+    };
+    commands
+        .spawn(SandBox::new(width as usize, height as usize, None))
+        .insert(SpriteBundle {
+            texture: image_handle,
+            transform: Transform {
+                translation: Vec3::new(0.0, 0.0, 0.0),
+                ..Default::default()
+            },
+            ..Default::default()
+        });
 }

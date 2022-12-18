@@ -48,7 +48,11 @@ pub fn mouse_editor_input(
         }
     }
 
-    if egui_context.ctx_mut().wants_pointer_input() || egui_context.ctx_mut().wants_keyboard_input()
+    let ctx = egui_context.ctx_mut();
+    if ctx.is_using_pointer()
+        || ctx.is_pointer_over_area()
+        || ctx.wants_pointer_input()
+        || ctx.wants_keyboard_input()
     {
         // GUI gets priority for input events
         return;

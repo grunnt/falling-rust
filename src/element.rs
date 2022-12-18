@@ -18,6 +18,8 @@ pub enum Element {
     Life,
     Seed,
     Plant,
+    TNT,
+    Explosion,
     WaterSource,
     AcidSource,
     OilSource,
@@ -36,6 +38,7 @@ impl Element {
             Element::Lava => ElementForm::Liquid,
             Element::Fire => ElementForm::Gas,
             Element::Smoke => ElementForm::Gas,
+            Element::Explosion => ElementForm::Gas,
             Element::Sand => ElementForm::Powder,
             Element::Ash => ElementForm::Powder,
             Element::Rust => ElementForm::Powder,
@@ -53,6 +56,7 @@ impl Element {
             Element::Rust => true,
             Element::Plant => true,
             Element::Seed => true,
+            Element::TNT => true,
             _ => false,
         }
     }
@@ -102,9 +106,19 @@ impl Element {
         }
     }
 
+    pub fn blast_resistance(&self) -> u8 {
+        match self {
+            Element::Rock => 16,
+            Element::Iron => 12,
+            Element::Wood => 4,
+            Element::Sand => 4,
+            _ => 1,
+        }
+    }
+
     pub fn strength(&self) -> u8 {
         match self {
-            Element::Fire => 16,
+            Element::Fire => 8,
             Element::Acid => 32,
             Element::Wood => 4,
             Element::Oil => 1,
@@ -113,6 +127,7 @@ impl Element {
             Element::Sand => 8,
             Element::Iron => 64,
             Element::Seed => 32,
+            Element::TNT => 4,
             _ => 0,
         }
     }
@@ -132,6 +147,8 @@ impl Element {
             Element::Rust => 0.35,
             Element::Plant => 0.7,
             Element::Seed => 0.1,
+            Element::TNT => 0.2,
+            Element::Explosion => 0.1,
             _ => 0.0,
         }
     }
@@ -161,6 +178,8 @@ impl Element {
             Element::OilSource => (16, 4, 16),
             Element::FireSource => (255, 128, 8),
             Element::LavaSource => (128, 32, 8),
+            Element::TNT => (200, 32, 16),
+            Element::Explosion => (245, 220, 200),
         }
     }
 

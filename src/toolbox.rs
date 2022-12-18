@@ -5,6 +5,7 @@ use rand_xoshiro::{rand_core::SeedableRng, Xoshiro256Plus};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Tool {
+    Pixel,
     FillCircle,
     FillSquare,
     SprayCircle,
@@ -39,6 +40,9 @@ impl ToolBox {
             level.height()
         };
         match self.tool {
+            Tool::Pixel => {
+                level.set_element(x, y, self.element);
+            }
             Tool::FillCircle => {
                 let radius_sq = (half_size * half_size) as isize;
                 for cy in y1..y2 {

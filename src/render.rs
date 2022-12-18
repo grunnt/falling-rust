@@ -1,5 +1,6 @@
 use crate::{element::Element, sandbox::SandBox};
 use bevy::prelude::*;
+use bevy::utils::Instant;
 
 // "Render" the world by copying the element cells to pixels on a texture
 pub fn render_system(
@@ -11,7 +12,9 @@ pub fn render_system(
         // Sandbox not active, so skip this
         return;
     }
-    let (sandbox, image_handle) = sandbox.unwrap();
+    let (mut sandbox, image_handle) = sandbox.unwrap();
+
+    let start = Instant::now();
 
     let image = images.get_mut(image_handle).unwrap();
     for y in 0..sandbox.height() {
@@ -50,4 +53,7 @@ pub fn render_system(
             image.data[index + 3] = color.3;
         }
     }
+
+    let duration = Instant::now() - start;
+    sandbox.render_time_ms = duration.as_millis();
 }
