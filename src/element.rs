@@ -19,6 +19,7 @@ pub enum Element {
     Seed,
     Plant,
     TNT,
+    Fuse,
     Explosion,
     WaterSource,
     AcidSource,
@@ -57,6 +58,7 @@ impl Element {
             Element::Plant => true,
             Element::Seed => true,
             Element::TNT => true,
+            Element::Fuse => true,
             _ => false,
         }
     }
@@ -128,6 +130,7 @@ impl Element {
             Element::Iron => 64,
             Element::Seed => 32,
             Element::TNT => 4,
+            Element::Fuse => 8,
             _ => 0,
         }
     }
@@ -180,6 +183,7 @@ impl Element {
             Element::LavaSource => (128, 32, 8),
             Element::TNT => (200, 32, 16),
             Element::Explosion => (245, 220, 200),
+            Element::Fuse => (127, 51, 0),
         }
     }
 

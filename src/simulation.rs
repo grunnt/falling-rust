@@ -78,6 +78,7 @@ fn update_cell(x: usize, y: usize, sandbox: &mut SandBox) {
         Element::Seed => update_seed(x, y, sandbox),
         Element::TNT => update_tnt(x, y, sandbox),
         Element::Explosion => update_explosion(x, y, sandbox),
+        Element::Fuse => update_fuse(x, y, sandbox),
         Element::Wood => false,
         Element::Rock => false,
         Element::Indestructible => false,
@@ -370,7 +371,7 @@ fn update_fire(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
         sandbox.swap(x, y, nx, ny);
         return true;
     }
-    if element == Element::TNT {
+    if element == Element::TNT || element == Element::Fuse {
         sandbox.get_mut(nx, ny).strength -= 1;
         return false;
     }
@@ -552,7 +553,7 @@ fn update_plant(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
     let mut attached = false;
     if cell_variant == Element::Seed.strength() {
         // Root cell
-        for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y + 1), (x, y + 1)] {
+        for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
             let neighbour = sandbox.get(nx, ny);
             if neighbour.element != Element::Plant && neighbour.element.plant_nutrition() {
                 attached = true;
@@ -560,7 +561,7 @@ fn update_plant(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
             }
         }
     } else {
-        for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y + 1), (x, y + 1)] {
+        for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
             let neighbour = sandbox.get(nx, ny);
             if neighbour.element == Element::Plant && neighbour.variant > cell_variant {
                 attached = true;
@@ -643,6 +644,28 @@ fn update_explosion(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
         }
     }
     true
+}
+
+fn update_fuse(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
+    if sandbox.get(x, y).strength == Element::Fuse.strength() {
+        return false;
+    }
+    if sandbox.get_mut(x, y).dissolve_to(Element::Air) {
+        for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
+            let neighbour = sandbox.get_mut(nx, ny);
+            if neighbour.element == Element::Fuse
+                && neighbour.element.strength() == Element::Fuse.strength()
+            {
+                neighbour.strength -= 1;
+            } else if neighbour.element == Element::TNT
+                && neighbour.element.strength() == Element::TNT.strength()
+            {
+                neighbour.strength -= 1;
+            }
+        }
+        return true;
+    }
+    false
 }
 
 fn update_source(x: usize, y: usize, element: Element, sandbox: &mut SandBox) -> bool {

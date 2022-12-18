@@ -48,6 +48,7 @@ pub fn gui_system(
                                 ui.selectable_value(&mut toolbox.element, Element::Life, "Life");
                                 ui.selectable_value(&mut toolbox.element, Element::Seed, "Seed");
                                 ui.selectable_value(&mut toolbox.element, Element::TNT, "TNT");
+                                ui.selectable_value(&mut toolbox.element, Element::Fuse, "Fuse");
                                 ui.selectable_value(
                                     &mut toolbox.element,
                                     Element::WaterSource,
