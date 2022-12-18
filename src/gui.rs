@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_egui::{
-    egui::{self, ScrollArea},
-    EguiContext,
+    egui::{self, style::*, FontData, FontDefinitions, FontFamily, ScrollArea},
+    EguiContext, EguiPlugin,
 };
 
 use crate::{
@@ -11,6 +11,16 @@ use crate::{
     spawn_sandbox,
     toolbox::{Tool, ToolBox},
 };
+
+pub struct GuiPlugin;
+
+impl Plugin for GuiPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugin(EguiPlugin)
+            .add_system(gui_system)
+            .add_startup_system(setup_gui);
+    }
+}
 
 pub fn gui_system(
     mut egui_context: ResMut<EguiContext>,
@@ -152,4 +162,31 @@ pub fn gui_system(
                     );
                 });
         });
+}
+
+fn setup_gui(mut egui_context: ResMut<EguiContext>) {
+    let mut style = egui::Style::default();
+    style.spacing = Spacing::default();
+    style.spacing.scroll_bar_width = 20.0;
+    style.spacing.button_padding = bevy_egui::egui::Vec2::new(10.0, 10.0);
+    egui_context.ctx_mut().set_style(style);
+
+    let mut fonts = FontDefinitions::default();
+    let pixelfont_name = "pixelfont";
+    let mut pixelfont_data = FontData::from_static(include_bytes!("../pixelfont.ttf"));
+    pixelfont_data.tweak.scale = 2.0;
+    fonts
+        .font_data
+        .insert(pixelfont_name.to_owned(), pixelfont_data);
+    fonts
+        .families
+        .get_mut(&FontFamily::Proportional)
+        .unwrap()
+        .insert(0, pixelfont_name.to_owned());
+    fonts
+        .families
+        .get_mut(&FontFamily::Monospace)
+        .unwrap()
+        .push(pixelfont_name.to_owned());
+    egui_context.ctx_mut().set_fonts(fonts);
 }
