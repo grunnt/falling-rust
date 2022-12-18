@@ -1,3 +1,5 @@
+use std::fmt;
+
 use crate::{element::Element, sandbox::SandBox};
 use bevy::prelude::Resource;
 use rand::Rng;
@@ -6,9 +8,9 @@ use rand_xoshiro::{rand_core::SeedableRng, Xoshiro256Plus};
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Tool {
     Pixel,
-    FillCircle,
-    FillSquare,
-    SprayCircle,
+    Circle,
+    Square,
+    Spray,
 }
 
 #[derive(Resource)]
@@ -43,7 +45,7 @@ impl ToolBox {
             Tool::Pixel => {
                 level.set_element(x, y, self.element);
             }
-            Tool::FillCircle => {
+            Tool::Circle => {
                 let radius_sq = (half_size * half_size) as isize;
                 for cy in y1..y2 {
                     for cx in x1..x2 {
@@ -55,14 +57,14 @@ impl ToolBox {
                     }
                 }
             }
-            Tool::FillSquare => {
+            Tool::Square => {
                 for cy in y1..y2 {
                     for cx in x1..x2 {
                         level.set_element(cx, cy, self.element);
                     }
                 }
             }
-            Tool::SprayCircle => {
+            Tool::Spray => {
                 let radius_sq = (half_size * half_size) as isize;
                 let count = if half_size > 3 { half_size / 3 } else { 1 };
                 for _ in 0..count {
@@ -82,10 +84,16 @@ impl ToolBox {
 impl Default for ToolBox {
     fn default() -> Self {
         Self {
-            tool: Tool::FillCircle,
+            tool: Tool::Circle,
             element: Element::Sand,
             tool_size: 8,
             random: Xoshiro256Plus::from_entropy(),
         }
+    }
+}
+
+impl fmt::Display for Tool {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
     }
 }

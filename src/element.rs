@@ -1,3 +1,5 @@
+use std::fmt;
+
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Element {
@@ -205,4 +207,10 @@ pub enum ElementForm {
     Powder,
     Liquid,
     Gas,
+}
+
+impl fmt::Display for Element {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
 }

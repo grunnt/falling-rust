@@ -8,7 +8,12 @@ use bevy::{
 };
 use bevy_egui::EguiContext;
 
-use crate::{element::Element, sandbox::SandBox, toolbox::ToolBox};
+use crate::{
+    element::Element,
+    gui::{GuiMode, SandboxGui},
+    sandbox::SandBox,
+    toolbox::ToolBox,
+};
 
 #[derive(Default, Resource)]
 pub struct MouseInputState {
@@ -29,6 +34,7 @@ pub fn mouse_editor_input(
     mut egui_context: ResMut<EguiContext>,
     mut toolbox: ResMut<ToolBox>,
     mut sandbox: Query<&mut SandBox>,
+    gui: Res<SandboxGui>,
 ) {
     // Record latest position
     for event in cursor_moved_events.iter() {
@@ -76,7 +82,7 @@ pub fn mouse_editor_input(
         (sandbox.height() / 2) as f32 - world_pos.y,
     );
 
-    // Zoom camera
+    // Zoom camera using mouse wheel
     for event in mouse_wheel_events.iter() {
         if event.y > 0.0 {
             transform.scale.x = (transform.scale.x * 0.9).clamp(0.1, 1.0);
@@ -89,22 +95,24 @@ pub fn mouse_editor_input(
 
     // Pan camera
     for event in mouse_motion_events.iter() {
-        if state.middle_button_down {
+        if state.middle_button_down || (gui.mode == GuiMode::View && state.left_button_down) {
             transform.translation.x = transform.translation.x - event.delta.x * transform.scale.x;
             transform.translation.y = transform.translation.y + event.delta.y * transform.scale.y;
         }
     }
 
     // Edit the world
-    let (x, y) = (state.world_position.x, state.world_position.y);
-    if x > 0.0 && x < sandbox.width() as f32 && y > 0.0 && y < sandbox.height() as f32 {
-        if state.left_button_down {
-            toolbox.apply(&mut sandbox, x.floor() as usize, y.floor() as usize);
-        } else if state.right_button_down {
-            let element = toolbox.element;
-            toolbox.element = Element::Air;
-            toolbox.apply(&mut sandbox, x.floor() as usize, y.floor() as usize);
-            toolbox.element = element;
+    if gui.mode != GuiMode::View {
+        let (x, y) = (state.world_position.x, state.world_position.y);
+        if x > 0.0 && x < sandbox.width() as f32 && y > 0.0 && y < sandbox.height() as f32 {
+            if state.left_button_down {
+                toolbox.apply(&mut sandbox, x.floor() as usize, y.floor() as usize);
+            } else if state.right_button_down {
+                let element = toolbox.element;
+                toolbox.element = Element::Air;
+                toolbox.apply(&mut sandbox, x.floor() as usize, y.floor() as usize);
+                toolbox.element = element;
+            }
         }
     }
 }
