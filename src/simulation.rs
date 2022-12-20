@@ -350,9 +350,9 @@ fn update_drain(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
 }
 
 fn update_fire(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
-    let random = sandbox.random(5);
+    let random = sandbox.random(8);
     // Reduce fire strength over time
-    if random > 3 && !sandbox.reduce_strength(x, y, 1) {
+    if random > 4 && !sandbox.reduce_strength(x, y, 1) {
         sandbox.set_element(x, y, Element::Smoke);
         return true;
     }
@@ -364,7 +364,8 @@ fn update_fire(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
         0 => (x, y + 1),
         1 => (x + 1, y),
         2 => (x - 1, y),
-        _ => (x, y - 1),
+        3 => (x, y - 1),
+        _ => return false,
     };
     let element = sandbox.get(nx, ny).element;
     if element == Element::Air {
@@ -650,7 +651,7 @@ fn update_fuse(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
     if sandbox.get(x, y).strength == Element::Fuse.strength() {
         return false;
     }
-    if sandbox.get_mut(x, y).dissolve_to(Element::Air) {
+    if sandbox.get_mut(x, y).dissolve_to(Element::Fire) {
         for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
             let neighbour = sandbox.get_mut(nx, ny);
             if neighbour.element == Element::Fuse

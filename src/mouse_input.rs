@@ -15,6 +15,15 @@ use crate::{
     toolbox::ToolBox,
 };
 
+pub struct MouseInputPlugin;
+
+impl Plugin for MouseInputPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<MouseInputState>()
+            .add_system(mouse_editor_input);
+    }
+}
+
 #[derive(Default, Resource)]
 pub struct MouseInputState {
     pub left_button_down: bool,

@@ -2,20 +2,22 @@ mod cell;
 pub mod element;
 mod fill_browser;
 mod gui;
-mod input;
+mod mouse_input;
 mod render;
 pub mod sandbox;
 pub mod simulation;
 mod toolbox;
+mod touch_input;
 
 use bevy::prelude::*;
 use fill_browser::*;
 use gui::GuiPlugin;
-use input::{mouse_editor_input, MouseInputState};
+use mouse_input::MouseInputPlugin;
 use render::render_system;
 use sandbox::*;
 use simulation::{simulation_system, Simulation};
 use toolbox::ToolBox;
+use touch_input::TouchInputPlugin;
 
 pub fn start_app() {
     App::new()
@@ -35,14 +37,14 @@ pub fn start_app() {
         )
         .add_plugin(FillBrowserWindowPlugin)
         .add_plugin(GuiPlugin)
+        .add_plugin(MouseInputPlugin)
+        .add_plugin(TouchInputPlugin)
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
-        .init_resource::<MouseInputState>()
         .init_resource::<Simulation>()
         .init_resource::<ToolBox>()
         .add_startup_system(setup)
         .add_system(simulation_system)
         .add_system(render_system)
-        .add_system(mouse_editor_input)
         .run();
 }
 
