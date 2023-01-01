@@ -29,7 +29,7 @@ rustup target add wasm32-unknown-unknown
 
 Then falling-rust needs to be compiled for wasm:
 ```
-cargo build --release --target wasm32-unknown-unknown
+cargo build --release --target wasm32-unknown-unknown -C opt-level=s -C lto=true
 ```
 
 And finally you can generate bindings for javascript (and an index.html page) using `wasm-bindgen`:
