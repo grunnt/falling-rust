@@ -3,13 +3,27 @@ name = "falling-rust"
 version = "0.1.0"
 edition = "2021"
 
+# Slow compilation and linking but minimal binary size
+[profile.web]
+inherits = "release"
+opt-level = "z"
+lto = true
+strip = true
+codegen-units = 1
+panic = "abort"
+
 [dependencies]
-bevy = "0.9"
+bevy = { version = "0.9", default-features = false, features = [
+    "bevy_winit",
+    "bevy_asset",
+    "render",
+    "png",
+] }
 bevy_egui = "0.17"
+image = { version = "0.24.5", default-features = false, features = ["png"] }
 rand = "0.8.5"
 rand_xoshiro = "0.6.0"
 wasm-bindgen = "0.2.83"
-crossbeam = "0.8.2"
 
 [dependencies.web-sys]
 version = "0.3.60"

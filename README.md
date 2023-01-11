@@ -27,9 +27,9 @@ You will need to have the `wasm32-unknown-unknown` target installed. This is eas
 rustup target add wasm32-unknown-unknown
 ```
 
-Then falling-rust needs to be compiled for wasm:
+Then falling-rust needs to be compiled for wasm, using the profile that optimizes for binary size:
 ```
-cargo build --release --target wasm32-unknown-unknown -C opt-level=s -C lto=true
+cargo build --profile web --target wasm32-unknown-unknown
 ```
 
 And finally you can generate bindings for javascript (and an index.html page) using `wasm-bindgen`:

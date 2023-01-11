@@ -21,7 +21,7 @@ fn criterion_benchmark(criterion: &mut Criterion) {
     }
     for x in 0..size / 3 {
         sandbox.set_element(x * 3, size - 1, Element::Drain);
-    }
+    } 
     criterion.bench_function("water_flow_simulation", |b| {
         b.iter(|| simulation_step(&mut simulation, &mut sandbox))
     });
