@@ -46,6 +46,19 @@ pub fn mouse_editor_input(
     mut sandbox: Query<&mut SandBox>,
     gui: Res<SandboxGui>,
 ) {
+    let ctx = egui_context.ctx_mut();
+    if ctx.wants_pointer_input() {
+        // GUI gets priority input
+        return;
+    }
+
+    let sandbox = sandbox.get_single_mut();
+    if sandbox.is_err() {
+        // Sandbox not active
+        return;
+    }
+    let mut sandbox = sandbox.unwrap();
+
     // Determine button state
     for event in mouse_button_input_events.iter() {
         if event.button == MouseButton::Left {
@@ -75,19 +88,6 @@ pub fn mouse_editor_input(
     for event in mouse_wheel_events.iter() {
         wheel_y += event.y;
     }
-
-    let ctx = egui_context.ctx_mut();
-    if ctx.wants_pointer_input() {
-        // GUI gets priority input
-        return;
-    }
-
-    let sandbox = sandbox.get_single_mut();
-    if sandbox.is_err() {
-        // Sandbox not active
-        return;
-    }
-    let mut sandbox = sandbox.unwrap();
 
     // Update world position of the pointer (e.g. for use while editing the world)
     let (camera, mut transform, global_transform) = camera.single_mut();

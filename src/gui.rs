@@ -1,11 +1,12 @@
 use bevy::prelude::*;
 use bevy_egui::{
-    egui::{self, style::*, Color32, ColorImage, Frame, Layout, TextureHandle, Ui},
+    egui::{self, color, style::*, Color32, ColorImage, Frame, Layout, TextureHandle, Ui},
     EguiContext, EguiPlugin,
 };
 
 use crate::{
     element::*,
+    render::cell_color,
     sandbox::SandBox,
     simulation::Simulation,
     spawn_sandbox,
@@ -48,6 +49,7 @@ pub struct SandboxGui {
     pub icon_settings_handle: TextureHandle,
     pub icon_empty_handle: TextureHandle,
     pub icon_eraser_handle: TextureHandle,
+    pub element_icons: [TextureHandle; MAX_ELEMENT_ID as usize],
 }
 
 pub fn gui_system(
@@ -169,41 +171,24 @@ pub fn gui_system(
                     )
                     .with_main_wrap(true),
                     |ui| {
-                        ui.selectable_value(&mut toolbox.element, Element::Sand, "Sand");
-                        ui.selectable_value(&mut toolbox.element, Element::Wood, "Wood");
-                        ui.selectable_value(&mut toolbox.element, Element::Iron, "Iron");
-                        ui.selectable_value(&mut toolbox.element, Element::Rock, "Rock");
-                        ui.selectable_value(&mut toolbox.element, Element::Water, "Water");
-                        ui.selectable_value(&mut toolbox.element, Element::Acid, "Acid");
-                        ui.selectable_value(&mut toolbox.element, Element::Oil, "Oil");
-                        ui.selectable_value(&mut toolbox.element, Element::Lava, "Lava");
-                        ui.selectable_value(&mut toolbox.element, Element::Fire, "Fire");
-                        ui.selectable_value(&mut toolbox.element, Element::Life, "Life");
-                        ui.selectable_value(&mut toolbox.element, Element::Seed, "Seed");
-                        ui.selectable_value(&mut toolbox.element, Element::TNT, "TNT");
-                        ui.selectable_value(&mut toolbox.element, Element::Fuse, "Fuse");
-                        ui.selectable_value(
-                            &mut toolbox.element,
-                            Element::WaterSource,
-                            "Water source",
-                        );
-                        ui.selectable_value(
-                            &mut toolbox.element,
-                            Element::AcidSource,
-                            "Acid Source",
-                        );
-                        ui.selectable_value(&mut toolbox.element, Element::OilSource, "Oil source");
-                        ui.selectable_value(
-                            &mut toolbox.element,
-                            Element::LavaSource,
-                            "Lava source",
-                        );
-                        ui.selectable_value(
-                            &mut toolbox.element,
-                            Element::FireSource,
-                            "Fire source",
-                        );
-                        ui.selectable_value(&mut toolbox.element, Element::Drain, "Liquid drain");
+                        element_button(ui, &mut gui, Element::Sand, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Wood, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Iron, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Rock, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Water, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Acid, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Oil, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Lava, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Fire, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Life, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Seed, &mut toolbox);
+                        element_button(ui, &mut gui, Element::TNT, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Fuse, &mut toolbox);
+                        element_button(ui, &mut gui, Element::WaterSource, &mut toolbox);
+                        element_button(ui, &mut gui, Element::AcidSource, &mut toolbox);
+                        element_button(ui, &mut gui, Element::LavaSource, &mut toolbox);
+                        element_button(ui, &mut gui, Element::FireSource, &mut toolbox);
+                        element_button(ui, &mut gui, Element::Drain, &mut toolbox);
                     },
                 );
             });
@@ -280,6 +265,24 @@ pub fn gui_system(
     }
 }
 
+fn element_button(
+    ui: &mut Ui,
+    gui: &mut ResMut<SandboxGui>,
+    element: Element,
+    toolbox: &mut ResMut<ToolBox>,
+) {
+    if ui
+        .add(
+            egui::widgets::ImageButton::new(&gui.element_icons[element as usize], [64.0, 64.0])
+                .frame(true),
+        )
+        .clicked()
+    {
+        toolbox.element = element;
+        gui.mode = GuiMode::MainGui;
+    };
+}
+
 fn view_gui(ui: &mut Ui, gui: &mut SandboxGui, mut camera: Query<&mut Transform, With<Camera>>) {
     if ui
         .add(egui::widgets::ImageButton::new(&gui.icon_zoom_in_handle, [64.0, 64.0]).frame(false))
@@ -329,7 +332,7 @@ fn tool_gui(ui: &mut Ui, gui: &mut SandboxGui, toolbox: &mut ToolBox) {
         }
     };
 
-    element_gui(ui, gui);
+    element_gui(ui, gui, toolbox);
 
     let tool_button = egui::widgets::ImageButton::new(
         match toolbox.tool {
@@ -355,9 +358,10 @@ fn tool_gui(ui: &mut Ui, gui: &mut SandboxGui, toolbox: &mut ToolBox) {
     };
 }
 
-fn element_gui(ui: &mut Ui, gui: &mut SandboxGui) {
+fn element_gui(ui: &mut Ui, gui: &mut SandboxGui, toolbox: &mut ToolBox) {
     let element_button =
-        egui::widgets::ImageButton::new(&gui.icon_empty_handle, [64.0, 64.0]).frame(false);
+        egui::widgets::ImageButton::new(&gui.element_icons[toolbox.element as usize], [64.0, 64.0])
+            .frame(false);
     let element_button = if gui.mode == GuiMode::ElementSelect {
         element_button.tint(Color32::LIGHT_GREEN)
     } else {
@@ -380,7 +384,65 @@ fn setup_gui(mut commands: Commands, mut egui_context: ResMut<EguiContext>) {
     style.spacing.button_padding = bevy_egui::egui::Vec2::new(10.0, 10.0);
     egui_context.ctx_mut().set_style(style);
 
-    // Icons
+    // Generate element icons
+    let element_icons = [
+        generate_element_image(Element::Air, "Air", egui_context.as_mut()),
+        generate_element_image(Element::Sand, "Sand", egui_context.as_mut()),
+        generate_element_image(Element::Rock, "Rock", egui_context.as_mut()),
+        generate_element_image(Element::Water, "Water", egui_context.as_mut()),
+        generate_element_image(Element::Acid, "Acid", egui_context.as_mut()),
+        generate_element_image(Element::Drain, "Drain", egui_context.as_mut()),
+        generate_element_image(Element::Wood, "Wood", egui_context.as_mut()),
+        generate_element_image(Element::Iron, "Iron", egui_context.as_mut()),
+        generate_element_image(Element::Rust, "Rust", egui_context.as_mut()),
+        generate_element_image(Element::Fire, "Fire", egui_context.as_mut()),
+        generate_element_image(Element::Ash, "Ash", egui_context.as_mut()),
+        generate_element_image(Element::Oil, "Oil", egui_context.as_mut()),
+        generate_element_image(Element::Lava, "Lava", egui_context.as_mut()),
+        generate_element_image(Element::Smoke, "Smoke", egui_context.as_mut()),
+        generate_element_image(Element::Life, "Life", egui_context.as_mut()),
+        generate_element_image(Element::Seed, "Seed", egui_context.as_mut()),
+        generate_element_image(Element::Plant, "Plant", egui_context.as_mut()),
+        generate_element_image(Element::TNT, "TNT", egui_context.as_mut()),
+        generate_element_image(Element::Fuse, "Fuse", egui_context.as_mut()),
+        generate_element_image(Element::Explosion, "Explosion", egui_context.as_mut()),
+        generate_element_image(Element::WaterSource, "WaterSource", egui_context.as_mut()),
+        generate_element_image(Element::AcidSource, "AcidSource", egui_context.as_mut()),
+        generate_element_image(Element::OilSource, "OilSource", egui_context.as_mut()),
+        generate_element_image(Element::FireSource, "FireSource", egui_context.as_mut()),
+        generate_element_image(
+            Element::Indestructible,
+            "Indestructible",
+            egui_context.as_mut(),
+        ),
+    ];
+
+    //  Sand = 1,
+    // Rock = 2,
+    // Water = 3,
+    // Acid = 4,
+    // Drain = 5,
+    // Wood = 6,
+    // Iron = 7,
+    // Rust = 8,
+    // Fire = 9,
+    // Ash = 10,
+    // Oil = 11,
+    // Lava = 12,
+    // Smoke = 13,
+    // Life = 14,
+    // Seed = 15,
+    // Plant = 16,
+    // TNT = 17,
+    // Fuse = 18,
+    // Explosion = 19,
+    // WaterSource = 20,
+    // AcidSource = 21,
+    // OilSource = 22,
+    // FireSource = 23,
+    // LavaSource = 24,
+    // Indestructible = 25,
+
     commands.insert_resource(SandboxGui {
         mode: GuiMode::MainGui,
         last_element: Element::Sand,
@@ -449,6 +511,7 @@ fn setup_gui(mut commands: Commands, mut egui_context: ResMut<EguiContext>) {
             "icon_eraser",
             include_bytes!("../assets/icon_eraser.png"),
         ),
+        element_icons,
     });
 }
 
@@ -464,4 +527,40 @@ fn add_icon(egui_context: &mut EguiContext, name: &str, image_data: &[u8]) -> Te
             .ctx_mut()
             .load_texture(name, icon_image, Default::default());
     icon_texture_handle
+}
+
+pub fn generate_element_image(
+    element: Element,
+    name: &str,
+    egui_context: &mut EguiContext,
+) -> TextureHandle {
+    let size = 64;
+    let mut sandbox = SandBox::new(size, size, None);
+    let mut toolbox = ToolBox::default();
+    toolbox.element = element;
+    toolbox.tool = Tool::Circle;
+    toolbox.tool_size = size - 2;
+    toolbox.apply(&mut sandbox, size / 2, size / 2);
+
+    let mut img = ColorImage::new([size, size], Color32::TRANSPARENT);
+    for y in 0..size {
+        for x in 0..size {
+            let cell = sandbox.get(x, y);
+            let (r, g, b) = cell_color(cell);
+            img[(x, y)] = color::Color32::from_rgba_premultiplied(
+                r,
+                g,
+                b,
+                if cell.element == Element::Air || cell.element == Element::Indestructible {
+                    0
+                } else {
+                    255
+                },
+            );
+        }
+    }
+
+    egui_context
+        .ctx_mut()
+        .load_texture(name, img, Default::default())
 }
