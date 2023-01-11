@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_egui::{
-    egui::{self, color, style::*, Color32, ColorImage, Frame, Layout, TextureHandle, Ui},
+    egui::{self, style::*, Color32, ColorImage, Frame, Layout, TextureHandle, Ui},
     EguiContext, EguiPlugin,
 };
 
@@ -64,6 +64,7 @@ pub fn gui_system(
 ) {
     egui::SidePanel::right("right_panel")
         .frame(Frame::none())
+        .show_separator_line(false)
         .resizable(false)
         .min_width(64.0)
         .show(egui_context.ctx_mut(), |ui| {
@@ -104,6 +105,7 @@ pub fn gui_system(
 
     egui::TopBottomPanel::bottom("bottom_panel")
         .frame(Frame::none())
+        .show_separator_line(false)
         .resizable(false)
         .show(egui_context.ctx_mut(), |ui| {
             ui.horizontal(|ui| {
@@ -130,7 +132,6 @@ pub fn gui_system(
                         }
                         ui.label(format!("Simulation: {} ms", simulation.frame_time_ms));
                         ui.label(format!("Render: {} ms", sandbox.render_time_ms));
-                        ui.separator();
                         ui.label("Sandbox:");
                         if ui.button("Clear").clicked() {
                             sandbox.clear();
@@ -547,7 +548,7 @@ pub fn generate_element_image(
         for x in 0..size {
             let cell = sandbox.get(x, y);
             let (r, g, b) = cell_color(cell);
-            img[(x, y)] = color::Color32::from_rgba_premultiplied(
+            img[(x, y)] = Color32::from_rgba_premultiplied(
                 r,
                 g,
                 b,

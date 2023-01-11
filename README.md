@@ -34,5 +34,5 @@ cargo build --profile web --target wasm32-unknown-unknown
 
 And finally you can generate bindings for javascript (and an index.html page) using `wasm-bindgen`:
 ```
-wasm-bindgen --out-dir ./wasm --target web ./target/wasm32-unknown-unknown/release/falling-rust.wasm
+wasm-bindgen --out-dir ./wasm --target web ./target/wasm32-unknown-unknown/web/falling-rust.wasm
 ```
