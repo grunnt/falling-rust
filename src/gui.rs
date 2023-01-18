@@ -8,6 +8,8 @@ use bevy_egui::{
 use egui::{Align2, FontId, Mesh, Pos2, Rect, Shape, Vec2};
 use image::{DynamicImage, GenericImageView};
 
+const ICON_SIZE: f32 = 64.0;
+
 use crate::{
     element::*,
     language::{element_names, get_text, Language},
@@ -54,6 +56,7 @@ pub struct SandboxGui {
     pub icon_move_handle: TextureHandle,
     pub icon_settings_handle: TextureHandle,
     pub icon_eraser_handle: TextureHandle,
+    pub icon_step_handle: TextureHandle,
     pub element_icons: [TextureHandle; MAX_ELEMENT_ID as usize],
     pub element_names: HashMap<Element, String>,
 }
@@ -73,10 +76,10 @@ pub fn gui_system(
         .frame(Frame::none())
         .show_separator_line(false)
         .resizable(false)
-        .min_width(64.0)
+        .min_width(ICON_SIZE)
         .show(egui_context.ctx_mut(), |ui| {
             let settings_button =
-                egui::widgets::ImageButton::new(&gui.icon_settings_handle, [64.0, 64.0])
+                egui::widgets::ImageButton::new(&gui.icon_settings_handle, [ICON_SIZE, ICON_SIZE])
                     .frame(false);
             let settings_button = if gui.mode == GuiMode::SandboxSettings {
                 settings_button.tint(Color32::LIGHT_GREEN)
@@ -98,7 +101,7 @@ pub fn gui_system(
                         } else {
                             &gui.icon_pause_handle
                         },
-                        [64.0, 64.0],
+                        [ICON_SIZE, ICON_SIZE],
                     )
                     .frame(false),
                 )
@@ -106,6 +109,20 @@ pub fn gui_system(
             {
                 simulation.running = !simulation.running;
             };
+            if !simulation.running {
+                if ui
+                    .add(
+                        egui::widgets::ImageButton::new(
+                            &gui.icon_step_handle,
+                            [ICON_SIZE, ICON_SIZE],
+                        )
+                        .frame(false),
+                    )
+                    .clicked()
+                {
+                    simulation.step = true;
+                };
+            }
 
             view_gui(ui, gui.as_mut(), camera);
         });
@@ -123,11 +140,6 @@ pub fn gui_system(
     if gui.mode == GuiMode::SandboxSettings {
         egui::SidePanel::left("settings").show(egui_context.ctx_mut(), |ui| {
             let (entity, sandbox) = sandbox.single_mut();
-            if !simulation.running {
-                if ui.button("Step").clicked() {
-                    simulation.step = true;
-                }
-            }
             egui::ComboBox::from_label(get_text("size", settings.language))
                 .selected_text(format!(
                     "{}x{}",
@@ -223,7 +235,7 @@ pub fn gui_system(
                             .add(
                                 egui::widgets::ImageButton::new(
                                     &gui.icon_pencil_handle,
-                                    [64.0, 64.0],
+                                    [ICON_SIZE, ICON_SIZE],
                                 )
                                 .frame(false),
                             )
@@ -236,7 +248,7 @@ pub fn gui_system(
                             .add(
                                 egui::widgets::ImageButton::new(
                                     &gui.icon_circle_handle,
-                                    [64.0, 64.0],
+                                    [ICON_SIZE, ICON_SIZE],
                                 )
                                 .frame(false),
                             )
@@ -249,7 +261,7 @@ pub fn gui_system(
                             .add(
                                 egui::widgets::ImageButton::new(
                                     &gui.icon_square_handle,
-                                    [64.0, 64.0],
+                                    [ICON_SIZE, ICON_SIZE],
                                 )
                                 .frame(false),
                             )
@@ -262,7 +274,7 @@ pub fn gui_system(
                             .add(
                                 egui::widgets::ImageButton::new(
                                     &gui.icon_spray_handle,
-                                    [64.0, 64.0],
+                                    [ICON_SIZE, ICON_SIZE],
                                 )
                                 .frame(false),
                             )
@@ -282,7 +294,10 @@ pub fn gui_system(
 
 fn view_gui(ui: &mut Ui, gui: &mut SandboxGui, mut camera: Query<&mut Transform, With<Camera>>) {
     if ui
-        .add(egui::widgets::ImageButton::new(&gui.icon_zoom_in_handle, [64.0, 64.0]).frame(false))
+        .add(
+            egui::widgets::ImageButton::new(&gui.icon_zoom_in_handle, [ICON_SIZE, ICON_SIZE])
+                .frame(false),
+        )
         .clicked()
     {
         let mut transform = camera.single_mut();
@@ -290,7 +305,10 @@ fn view_gui(ui: &mut Ui, gui: &mut SandboxGui, mut camera: Query<&mut Transform,
         transform.scale.y = (transform.scale.y * 0.9).clamp(0.1, 1.0);
     };
     if ui
-        .add(egui::widgets::ImageButton::new(&gui.icon_zoom_out_handle, [64.0, 64.0]).frame(false))
+        .add(
+            egui::widgets::ImageButton::new(&gui.icon_zoom_out_handle, [ICON_SIZE, ICON_SIZE])
+                .frame(false),
+        )
         .clicked()
     {
         let mut transform = camera.single_mut();
@@ -298,7 +316,7 @@ fn view_gui(ui: &mut Ui, gui: &mut SandboxGui, mut camera: Query<&mut Transform,
         transform.scale.y = (transform.scale.y * 1.1).clamp(0.1, 1.0);
     };
     let move_button =
-        egui::widgets::ImageButton::new(&gui.icon_move_handle, [64.0, 64.0]).frame(false);
+        egui::widgets::ImageButton::new(&gui.icon_move_handle, [ICON_SIZE, ICON_SIZE]).frame(false);
     let move_button = if gui.mode == GuiMode::MoveView {
         move_button.tint(Color32::LIGHT_GREEN)
     } else {
@@ -315,7 +333,8 @@ fn view_gui(ui: &mut Ui, gui: &mut SandboxGui, mut camera: Query<&mut Transform,
 
 fn tool_gui(ui: &mut Ui, gui: &mut SandboxGui, toolbox: &mut ToolBox) {
     let eraser_button =
-        egui::widgets::ImageButton::new(&gui.icon_eraser_handle, [64.0, 64.0]).frame(false);
+        egui::widgets::ImageButton::new(&gui.icon_eraser_handle, [ICON_SIZE, ICON_SIZE])
+            .frame(false);
     let eraser_button = if toolbox.element == Element::Air {
         eraser_button.tint(Color32::LIGHT_GREEN)
     } else {
@@ -344,7 +363,7 @@ fn tool_gui(ui: &mut Ui, gui: &mut SandboxGui, toolbox: &mut ToolBox) {
             Tool::Square => &gui.icon_square_handle,
             Tool::Spray => &gui.icon_spray_handle,
         },
-        [64.0, 64.0],
+        [ICON_SIZE, ICON_SIZE],
     )
     .frame(false);
     let tool_button = if gui.mode == GuiMode::ToolSelect {
@@ -468,6 +487,11 @@ fn setup_gui(
             "icon_eraser",
             include_bytes!("../assets/icon_eraser.png"),
         ),
+        icon_step_handle: add_icon(
+            &mut egui_context,
+            "icon_step",
+            include_bytes!("../assets/icon_step.png"),
+        ),
         element_icons,
         element_names,
     });
@@ -500,7 +524,7 @@ fn element_button_click(
 }
 
 fn element_button(ui: &mut Ui, gui: &mut SandboxGui, element: Element) -> Response {
-    const SIZE: f32 = 64.0;
+    const SIZE: f32 = ICON_SIZE;
     let (rect, response) = ui.allocate_exact_size(Vec2::new(SIZE, SIZE), egui::Sense::click());
 
     if ui.is_rect_visible(rect) {

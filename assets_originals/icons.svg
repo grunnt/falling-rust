@@ -25,8 +25,8 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="2.587745"
-     inkscape:cx="138.53761"
-     inkscape:cy="318.61717"
+     inkscape:cx="179.11347"
+     inkscape:cy="221.23509"
      inkscape:window-width="1718"
      inkscape:window-height="1368"
      inkscape:window-x="-7"
@@ -203,34 +203,52 @@
          d="m 19.222531,37.414191 5.551109,3.714307 v 0 l -5.551109,3.714308 z"
          sodipodi:nodetypes="ccccc" />
     </g>
+    <circle
+       style="fill:#ffffff;fill-opacity:0.320122;stroke:#ffffff;stroke-width:0.423;stroke-linecap:square"
+       id="path234-9-6-2-0"
+       cx="41.826744"
+       cy="40.625118"
+       r="7.229795" />
+    <rect
+       style="fill:#ffffff;fill-opacity:0.320122;stroke:#ffffff;stroke-width:0.423;stroke-linecap:square"
+       id="rect3424"
+       width="0.79239678"
+       height="6.9015207"
+       x="40.299461"
+       y="37.174358" />
+    <rect
+       style="fill:#ffffff;fill-opacity:0.320122;stroke:#ffffff;stroke-width:0.423;stroke-linecap:square"
+       id="rect3424-3"
+       width="0.79239678"
+       height="6.9015207"
+       x="42.56163"
+       y="37.174358" />
     <g
-       id="g3456"
-       transform="translate(-1.7998083,-1.0396176)"
-       inkscape:export-filename="..\assets\icon_pause.png"
+       id="g5007"
+       inkscape:export-filename="..\assets\icon_step.png"
        inkscape:export-xdpi="109.22829"
        inkscape:export-ydpi="109.22829">
       <circle
          style="fill:#ffffff;fill-opacity:0.320122;stroke:#ffffff;stroke-width:0.423;stroke-linecap:square"
-         id="path234-9-6-2-0"
-         cx="43.626553"
-         cy="41.664738"
+         id="path234-9-6-2-4-1"
+         cx="64.107452"
+         cy="81.898041"
          r="7.229795" />
       <g
-         id="g3450">
+         id="g4991"
+         transform="translate(-0.4047911,0.26838636)">
+        <path
+           id="rect3411-9"
+           style="fill:#ffffff;fill-opacity:0.320122;stroke:#ffffff;stroke-width:0.422999;stroke-linecap:square"
+           d="m 63.445033,78.397365 4.819121,3.232288 v 0 l -4.819121,3.232289 z"
+           sodipodi:nodetypes="ccccc" />
         <rect
            style="fill:#ffffff;fill-opacity:0.320122;stroke:#ffffff;stroke-width:0.423;stroke-linecap:square"
-           id="rect3424"
+           id="rect3424-3-0"
            width="0.79239678"
            height="6.9015207"
-           x="42.09927"
-           y="38.213978" />
-        <rect
-           style="fill:#ffffff;fill-opacity:0.320122;stroke:#ffffff;stroke-width:0.423;stroke-linecap:square"
-           id="rect3424-3"
-           width="0.79239678"
-           height="6.9015207"
-           x="44.361439"
-           y="38.213978" />
+           x="61.650475"
+           y="78.178894" />
       </g>
     </g>
     <g
@@ -508,7 +526,10 @@
       </g>
     </g>
     <g
-       id="g4115">
+       id="g4115"
+       inkscape:export-filename="..\assets\icon_element.png"
+       inkscape:export-xdpi="109.22829"
+       inkscape:export-ydpi="109.22829">
       <circle
          style="fill:#ffffff;fill-opacity:0.320122;stroke:#ffffff;stroke-width:0.423;stroke-linecap:square"
          id="path234-9-6-2-8-4-3-8-3"
