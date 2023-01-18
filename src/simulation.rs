@@ -668,9 +668,11 @@ fn update_fuse(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
 }
 
 fn update_source(x: usize, y: usize, element: Element, sandbox: &mut SandBox) -> bool {
-    if sandbox.get(x, y + 1).element != element {
-        sandbox.set_element(x, y + 1, element);
-        return true;
+    for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
+        if sandbox.get(nx, ny).element == Element::Air {
+            sandbox.set_element(nx, ny, element);
+            return true;
+        }
     }
     false
 }
