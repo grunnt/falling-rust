@@ -24,14 +24,14 @@
      inkscape:deskcolor="#6f6f6f"
      inkscape:document-units="mm"
      showgrid="false"
-     inkscape:zoom="7.3192482"
-     inkscape:cx="251.187"
-     inkscape:cy="249.75243"
-     inkscape:window-width="3440"
-     inkscape:window-height="1377"
-     inkscape:window-x="-8"
-     inkscape:window-y="-8"
-     inkscape:window-maximized="1"
+     inkscape:zoom="2.587745"
+     inkscape:cx="138.53761"
+     inkscape:cy="318.61717"
+     inkscape:window-width="1718"
+     inkscape:window-height="1368"
+     inkscape:window-x="-7"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
      inkscape:current-layer="layer1" />
   <defs
      id="defs2" />
@@ -506,6 +506,24 @@
            x="83.178795"
            y="62.320835" />
       </g>
+    </g>
+    <g
+       id="g4115">
+      <circle
+         style="fill:#ffffff;fill-opacity:0.320122;stroke:#ffffff;stroke-width:0.423;stroke-linecap:square"
+         id="path234-9-6-2-8-4-3-8-3"
+         cx="42.431568"
+         cy="82.102531"
+         r="7.229795"
+         inkscape:export-filename="..\assets\icon_empty.png"
+         inkscape:export-xdpi="109.22829"
+         inkscape:export-ydpi="109.22829" />
+      <circle
+         style="fill:#217aee;stroke-width:0.264999;stroke-linecap:square;stroke-dasharray:0.53, 0.264999;stroke:none;fill-opacity:1"
+         id="path652"
+         cx="42.431568"
+         cy="82.102531"
+         r="6.1858068" />
     </g>
   </g>
 </svg>

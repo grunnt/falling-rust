@@ -394,9 +394,7 @@ fn update_ash(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
 
 fn update_lava(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
     let random = sandbox.random(500);
-    // Make lava glow
     let cell = sandbox.get_mut(x, y);
-    cell.variant = (cell.variant + random as u8) % 255;
     // Cool down when no longer at max hotness
     if random < 250 && cell.strength < 64 {
         if sandbox.get_mut(x, y).dissolve_to(Element::Rock) {

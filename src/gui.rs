@@ -1,13 +1,19 @@
+use std::collections::HashMap;
+
 use bevy::prelude::*;
 use bevy_egui::{
-    egui::{self, style::*, Color32, ColorImage, Frame, Layout, TextureHandle, Ui},
+    egui::{self, style::*, Color32, ColorImage, Frame, Layout, Response, TextureHandle, Ui},
     EguiContext, EguiPlugin,
 };
+use egui::{Align2, FontId, Mesh, Pos2, Rect, Shape, Vec2};
+use image::{DynamicImage, GenericImageView};
 
 use crate::{
     element::*,
+    language::{element_names, get_text, Language},
     render::cell_color,
     sandbox::SandBox,
+    settings::Settings,
     simulation::Simulation,
     spawn_sandbox,
     toolbox::{Tool, ToolBox},
@@ -47,15 +53,16 @@ pub struct SandboxGui {
     pub icon_zoom_out_handle: TextureHandle,
     pub icon_move_handle: TextureHandle,
     pub icon_settings_handle: TextureHandle,
-    pub icon_empty_handle: TextureHandle,
     pub icon_eraser_handle: TextureHandle,
     pub element_icons: [TextureHandle; MAX_ELEMENT_ID as usize],
+    pub element_names: HashMap<Element, String>,
 }
 
 pub fn gui_system(
     mut egui_context: ResMut<EguiContext>,
     camera: Query<&mut Transform, With<Camera>>,
     mut gui: ResMut<SandboxGui>,
+    mut settings: ResMut<Settings>,
     mut toolbox: ResMut<ToolBox>,
     mut simulation: ResMut<Simulation>,
     mut sandbox: Query<(Entity, &mut SandBox)>,
@@ -114,53 +121,60 @@ pub fn gui_system(
         });
 
     if gui.mode == GuiMode::SandboxSettings {
-        egui::CentralPanel::default()
-            .frame(Frame::none())
-            .show(egui_context.ctx_mut(), |ui| {
-                ui.with_layout(
-                    Layout::from_main_dir_and_cross_align(
-                        egui::Direction::LeftToRight,
-                        egui::Align::Min,
-                    )
-                    .with_main_wrap(true),
-                    |ui| {
-                        let (entity, mut sandbox) = sandbox.single_mut();
-                        if !simulation.running {
-                            if ui.button("Step").clicked() {
-                                simulation.step = true;
-                            }
-                        }
-                        ui.label(format!("Simulation: {} ms", simulation.frame_time_ms));
-                        ui.label(format!("Render: {} ms", sandbox.render_time_ms));
-                        ui.label("Sandbox:");
-                        if ui.button("Clear").clicked() {
-                            sandbox.clear();
-                            gui.mode = GuiMode::MainGui;
-                        }
-                        let mut new_size = None;
-                        if ui.button("New 64x64").clicked() {
-                            new_size = Some((64, 64));
-                        }
-                        if ui.button("New 128x128").clicked() {
-                            new_size = Some((128, 128));
-                        }
-                        if ui.button("New 256x256").clicked() {
-                            new_size = Some((256, 256));
-                        }
-                        if ui.button("New 512x512").clicked() {
-                            new_size = Some((512, 512));
-                        }
-                        if ui.button("New 1024x1024").clicked() {
-                            new_size = Some((1024, 1024));
-                        }
-                        if let Some((width, height)) = new_size {
-                            commands.entity(entity).despawn();
-                            spawn_sandbox(commands, images.as_mut(), width, height);
-                            gui.mode = GuiMode::MainGui;
-                        }
-                    },
+        egui::SidePanel::left("settings").show(egui_context.ctx_mut(), |ui| {
+            let (entity, sandbox) = sandbox.single_mut();
+            if !simulation.running {
+                if ui.button("Step").clicked() {
+                    simulation.step = true;
+                }
+            }
+            egui::ComboBox::from_label(get_text("size", settings.language))
+                .selected_text(format!(
+                    "{}x{}",
+                    settings.sandbox_size, settings.sandbox_size
+                ))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut settings.sandbox_size, 64, "64x64");
+                    ui.selectable_value(&mut settings.sandbox_size, 128, "128x128");
+                    ui.selectable_value(&mut settings.sandbox_size, 256, "256x256");
+                    ui.selectable_value(&mut settings.sandbox_size, 512, "512x512");
+                    ui.selectable_value(&mut settings.sandbox_size, 1024, "1024x1024");
+                });
+            if ui.button(get_text("new", settings.language)).clicked() {
+                commands.entity(entity).despawn();
+                spawn_sandbox(
+                    commands,
+                    images.as_mut(),
+                    settings.sandbox_size,
+                    settings.sandbox_size,
                 );
-            });
+                gui.mode = GuiMode::MainGui;
+            }
+            ui.separator();
+            let previous_language = settings.language;
+            egui::ComboBox::from_label(get_text("language", settings.language))
+                .selected_text(format!("{:?}", settings.language))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(&mut settings.language, Language::English, "English");
+                    ui.selectable_value(&mut settings.language, Language::Nederlands, "Nederlands");
+                });
+            if settings.language != previous_language {
+                gui.element_names = element_names(settings.language);
+            }
+            ui.separator();
+            ui.label(format!(
+                "{}: {} ms",
+                get_text("simulation", settings.language),
+                simulation.frame_time_ms
+            ));
+            ui.label(format!(
+                "{}: {} ms",
+                get_text("render", settings.language),
+                sandbox.render_time_ms
+            ));
+            ui.separator();
+            ui.hyperlink_to("Made by Bas", "https://www.basvs.dev");
+        });
     } else if gui.mode == GuiMode::ElementSelect {
         egui::CentralPanel::default()
             .frame(Frame::none())
@@ -172,24 +186,24 @@ pub fn gui_system(
                     )
                     .with_main_wrap(true),
                     |ui| {
-                        element_button(ui, &mut gui, Element::Sand, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Wood, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Iron, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Rock, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Water, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Acid, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Oil, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Lava, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Fire, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Life, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Seed, &mut toolbox);
-                        element_button(ui, &mut gui, Element::TNT, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Fuse, &mut toolbox);
-                        element_button(ui, &mut gui, Element::WaterSource, &mut toolbox);
-                        element_button(ui, &mut gui, Element::AcidSource, &mut toolbox);
-                        element_button(ui, &mut gui, Element::LavaSource, &mut toolbox);
-                        element_button(ui, &mut gui, Element::FireSource, &mut toolbox);
-                        element_button(ui, &mut gui, Element::Drain, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Sand, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Wood, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Iron, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Rock, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Water, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Acid, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Oil, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Lava, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Fire, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Life, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Seed, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::TNT, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Fuse, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::WaterSource, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::AcidSource, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::LavaSource, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::FireSource, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Drain, &mut toolbox);
                     },
                 );
             });
@@ -266,24 +280,6 @@ pub fn gui_system(
     }
 }
 
-fn element_button(
-    ui: &mut Ui,
-    gui: &mut ResMut<SandboxGui>,
-    element: Element,
-    toolbox: &mut ResMut<ToolBox>,
-) {
-    if ui
-        .add(
-            egui::widgets::ImageButton::new(&gui.element_icons[element as usize], [64.0, 64.0])
-                .frame(true),
-        )
-        .clicked()
-    {
-        toolbox.element = element;
-        gui.mode = GuiMode::MainGui;
-    };
-}
-
 fn view_gui(ui: &mut Ui, gui: &mut SandboxGui, mut camera: Query<&mut Transform, With<Camera>>) {
     if ui
         .add(egui::widgets::ImageButton::new(&gui.icon_zoom_in_handle, [64.0, 64.0]).frame(false))
@@ -333,7 +329,13 @@ fn tool_gui(ui: &mut Ui, gui: &mut SandboxGui, toolbox: &mut ToolBox) {
         }
     };
 
-    element_gui(ui, gui, toolbox);
+    if element_button(ui, gui, toolbox.element).clicked() {
+        if gui.mode == GuiMode::ElementSelect {
+            gui.mode = GuiMode::MainGui;
+        } else {
+            gui.mode = GuiMode::ElementSelect;
+        }
+    };
 
     let tool_button = egui::widgets::ImageButton::new(
         match toolbox.tool {
@@ -359,25 +361,11 @@ fn tool_gui(ui: &mut Ui, gui: &mut SandboxGui, toolbox: &mut ToolBox) {
     };
 }
 
-fn element_gui(ui: &mut Ui, gui: &mut SandboxGui, toolbox: &mut ToolBox) {
-    let element_button =
-        egui::widgets::ImageButton::new(&gui.element_icons[toolbox.element as usize], [64.0, 64.0])
-            .frame(false);
-    let element_button = if gui.mode == GuiMode::ElementSelect {
-        element_button.tint(Color32::LIGHT_GREEN)
-    } else {
-        element_button
-    };
-    if ui.add(element_button).clicked() {
-        if gui.mode == GuiMode::ElementSelect {
-            gui.mode = GuiMode::MainGui;
-        } else {
-            gui.mode = GuiMode::ElementSelect;
-        }
-    };
-}
-
-fn setup_gui(mut commands: Commands, mut egui_context: ResMut<EguiContext>) {
+fn setup_gui(
+    mut commands: Commands,
+    mut egui_context: ResMut<EguiContext>,
+    settings: Res<Settings>,
+) {
     // General styling
     let mut style = egui::Style::default();
     style.spacing = Spacing::default();
@@ -386,63 +374,36 @@ fn setup_gui(mut commands: Commands, mut egui_context: ResMut<EguiContext>) {
     egui_context.ctx_mut().set_style(style);
 
     // Generate element icons
+    let background = image::load_from_memory(include_bytes!("../assets/icon_element.png")).unwrap();
     let element_icons = [
-        generate_element_image(Element::Air, "Air", egui_context.as_mut()),
-        generate_element_image(Element::Sand, "Sand", egui_context.as_mut()),
-        generate_element_image(Element::Rock, "Rock", egui_context.as_mut()),
-        generate_element_image(Element::Water, "Water", egui_context.as_mut()),
-        generate_element_image(Element::Acid, "Acid", egui_context.as_mut()),
-        generate_element_image(Element::Drain, "Drain", egui_context.as_mut()),
-        generate_element_image(Element::Wood, "Wood", egui_context.as_mut()),
-        generate_element_image(Element::Iron, "Iron", egui_context.as_mut()),
-        generate_element_image(Element::Rust, "Rust", egui_context.as_mut()),
-        generate_element_image(Element::Fire, "Fire", egui_context.as_mut()),
-        generate_element_image(Element::Ash, "Ash", egui_context.as_mut()),
-        generate_element_image(Element::Oil, "Oil", egui_context.as_mut()),
-        generate_element_image(Element::Lava, "Lava", egui_context.as_mut()),
-        generate_element_image(Element::Smoke, "Smoke", egui_context.as_mut()),
-        generate_element_image(Element::Life, "Life", egui_context.as_mut()),
-        generate_element_image(Element::Seed, "Seed", egui_context.as_mut()),
-        generate_element_image(Element::Plant, "Plant", egui_context.as_mut()),
-        generate_element_image(Element::TNT, "TNT", egui_context.as_mut()),
-        generate_element_image(Element::Fuse, "Fuse", egui_context.as_mut()),
-        generate_element_image(Element::Explosion, "Explosion", egui_context.as_mut()),
-        generate_element_image(Element::WaterSource, "WaterSource", egui_context.as_mut()),
-        generate_element_image(Element::AcidSource, "AcidSource", egui_context.as_mut()),
-        generate_element_image(Element::OilSource, "OilSource", egui_context.as_mut()),
-        generate_element_image(Element::FireSource, "FireSource", egui_context.as_mut()),
-        generate_element_image(
-            Element::Indestructible,
-            "Indestructible",
-            egui_context.as_mut(),
-        ),
+        generate_element_image(Element::Air, egui_context.as_mut(), &background),
+        generate_element_image(Element::Sand, egui_context.as_mut(), &background),
+        generate_element_image(Element::Rock, egui_context.as_mut(), &background),
+        generate_element_image(Element::Water, egui_context.as_mut(), &background),
+        generate_element_image(Element::Acid, egui_context.as_mut(), &background),
+        generate_element_image(Element::Drain, egui_context.as_mut(), &background),
+        generate_element_image(Element::Wood, egui_context.as_mut(), &background),
+        generate_element_image(Element::Iron, egui_context.as_mut(), &background),
+        generate_element_image(Element::Rust, egui_context.as_mut(), &background),
+        generate_element_image(Element::Fire, egui_context.as_mut(), &background),
+        generate_element_image(Element::Ash, egui_context.as_mut(), &background),
+        generate_element_image(Element::Oil, egui_context.as_mut(), &background),
+        generate_element_image(Element::Lava, egui_context.as_mut(), &background),
+        generate_element_image(Element::Smoke, egui_context.as_mut(), &background),
+        generate_element_image(Element::Life, egui_context.as_mut(), &background),
+        generate_element_image(Element::Seed, egui_context.as_mut(), &background),
+        generate_element_image(Element::Plant, egui_context.as_mut(), &background),
+        generate_element_image(Element::TNT, egui_context.as_mut(), &background),
+        generate_element_image(Element::Fuse, egui_context.as_mut(), &background),
+        generate_element_image(Element::Explosion, egui_context.as_mut(), &background),
+        generate_element_image(Element::WaterSource, egui_context.as_mut(), &background),
+        generate_element_image(Element::AcidSource, egui_context.as_mut(), &background),
+        generate_element_image(Element::OilSource, egui_context.as_mut(), &background),
+        generate_element_image(Element::FireSource, egui_context.as_mut(), &background),
+        generate_element_image(Element::Indestructible, egui_context.as_mut(), &background),
     ];
 
-    //  Sand = 1,
-    // Rock = 2,
-    // Water = 3,
-    // Acid = 4,
-    // Drain = 5,
-    // Wood = 6,
-    // Iron = 7,
-    // Rust = 8,
-    // Fire = 9,
-    // Ash = 10,
-    // Oil = 11,
-    // Lava = 12,
-    // Smoke = 13,
-    // Life = 14,
-    // Seed = 15,
-    // Plant = 16,
-    // TNT = 17,
-    // Fuse = 18,
-    // Explosion = 19,
-    // WaterSource = 20,
-    // AcidSource = 21,
-    // OilSource = 22,
-    // FireSource = 23,
-    // LavaSource = 24,
-    // Indestructible = 25,
+    let element_names = element_names(settings.language);
 
     commands.insert_resource(SandboxGui {
         mode: GuiMode::MainGui,
@@ -502,17 +463,13 @@ fn setup_gui(mut commands: Commands, mut egui_context: ResMut<EguiContext>) {
             "icon_settings",
             include_bytes!("../assets/icon_settings.png"),
         ),
-        icon_empty_handle: add_icon(
-            &mut egui_context,
-            "icon_empty",
-            include_bytes!("../assets/icon_empty.png"),
-        ),
         icon_eraser_handle: add_icon(
             &mut egui_context,
             "icon_eraser",
             include_bytes!("../assets/icon_eraser.png"),
         ),
         element_icons,
+        element_names,
     });
 }
 
@@ -530,38 +487,91 @@ fn add_icon(egui_context: &mut EguiContext, name: &str, image_data: &[u8]) -> Te
     icon_texture_handle
 }
 
+fn element_button_click(
+    ui: &mut Ui,
+    gui: &mut ResMut<SandboxGui>,
+    element: Element,
+    toolbox: &mut ResMut<ToolBox>,
+) {
+    if element_button(ui, gui, element).clicked() {
+        toolbox.element = element;
+        gui.mode = GuiMode::MainGui;
+    }
+}
+
+fn element_button(ui: &mut Ui, gui: &mut SandboxGui, element: Element) -> Response {
+    const SIZE: f32 = 64.0;
+    let (rect, response) = ui.allocate_exact_size(Vec2::new(SIZE, SIZE), egui::Sense::click());
+
+    if ui.is_rect_visible(rect) {
+        let mut mesh = Mesh::with_texture(gui.element_icons[element as usize].id());
+        mesh.add_rect_with_uv(
+            rect,
+            Rect::from_min_max(Pos2::new(0.0, 0.0), Pos2::new(1.0, 1.0)),
+            Color32::WHITE,
+        );
+        ui.painter().add(Shape::mesh(mesh));
+        // Element name (with simple shadow)
+        ui.painter().text(
+            rect.left_top() + Vec2::new(11.0, 16.0),
+            Align2::LEFT_TOP,
+            gui.element_names.get(&element).unwrap().replace(" ", "\n"),
+            FontId::proportional(14.0),
+            Color32::BLACK,
+        );
+        ui.painter().text(
+            rect.left_top() + Vec2::new(10.0, 15.0),
+            Align2::LEFT_TOP,
+            gui.element_names.get(&element).unwrap().replace(" ", "\n"),
+            FontId::proportional(14.0),
+            Color32::WHITE,
+        );
+    }
+    response
+}
+
+// Create a button image for element selection
 pub fn generate_element_image(
     element: Element,
-    name: &str,
     egui_context: &mut EguiContext,
+    background: &DynamicImage,
 ) -> TextureHandle {
+    // Generate a tiny sandbox containing our element
     let size = 64;
     let mut sandbox = SandBox::new(size, size, None);
     let mut toolbox = ToolBox::default();
     toolbox.element = element;
-    toolbox.tool = Tool::Circle;
-    toolbox.tool_size = size - 2;
+    toolbox.tool = Tool::Square;
+    toolbox.tool_size = size;
+    let center = (size / 2) as isize;
     toolbox.apply(&mut sandbox, size / 2, size / 2);
 
     let mut img = ColorImage::new([size, size], Color32::TRANSPARENT);
+
     for y in 0..size {
         for x in 0..size {
+            // Get the background image color
+            let pixel = background.get_pixel(x as u32, y as u32);
+            let (or, og, ob, oa) = (pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
+
+            // Get the element color
             let cell = sandbox.get(x, y);
-            let (r, g, b) = cell_color(cell);
-            img[(x, y)] = Color32::from_rgba_premultiplied(
-                r,
-                g,
-                b,
-                if cell.element == Element::Air || cell.element == Element::Indestructible {
-                    0
-                } else {
-                    255
-                },
-            );
+            let (cr, cg, cb) = cell_color(cell);
+
+            // Do a simplified alpha blend between the two to soften the edges
+            let dx = (center - x as isize).abs() as f32;
+            let dy = (center - y as isize).abs() as f32;
+            let alpha = 1.0 - ((dx * dx + dy * dy) / (size as f32 / 2.0).powf(2.0)).powf(3.0);
+            let r = (cr as f32 * alpha + or as f32 * (1.0 - alpha)) as u8;
+            let g = (cg as f32 * alpha + og as f32 * (1.0 - alpha)) as u8;
+            let b = (cb as f32 * alpha + ob as f32 * (1.0 - alpha)) as u8;
+            img[(x, y)] = Color32::from_rgba_premultiplied(r, g, b, oa);
         }
     }
 
-    egui_context
-        .ctx_mut()
-        .load_texture(name, img, Default::default())
+    egui_context.ctx_mut().load_texture(
+        format!("element_{}", element as u8),
+        img,
+        Default::default(),
+    )
 }

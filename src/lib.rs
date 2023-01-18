@@ -2,9 +2,11 @@ mod cell;
 pub mod element;
 mod fill_browser;
 mod gui;
+mod language;
 mod pointer_input;
 mod render;
 pub mod sandbox;
+mod settings;
 pub mod simulation;
 mod toolbox;
 
@@ -14,6 +16,7 @@ use gui::GuiPlugin;
 use pointer_input::PointerInputPlugin;
 use render::render_system;
 use sandbox::*;
+use settings::Settings;
 use simulation::{simulation_system, Simulation};
 use toolbox::ToolBox;
 
@@ -39,6 +42,7 @@ pub fn start_app() {
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .init_resource::<Simulation>()
         .init_resource::<ToolBox>()
+        .init_resource::<Settings>()
         .add_startup_system(setup)
         .add_system(simulation_system)
         .add_system(render_system)

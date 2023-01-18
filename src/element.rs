@@ -3,7 +3,7 @@ use std::fmt;
 pub const MAX_ELEMENT_ID: u8 = 25;
 
 #[repr(u8)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Element {
     Air = 0,
     Sand = 1,
@@ -32,6 +32,18 @@ pub enum Element {
     LavaSource = 24,
     Indestructible = 25,
 }
+
+#[derive(Clone, Debug)]
+pub struct ElementType {
+    pub form: ElementForm,
+}
+
+pub static ELEMENT_TYPES: [ElementType; 1] = [
+    // Air
+    ElementType {
+        form: ElementForm::Gas,
+    },
+];
 
 impl Element {
     pub fn form(&self) -> ElementForm {
