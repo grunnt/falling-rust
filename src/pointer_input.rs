@@ -79,6 +79,9 @@ pub fn mouse_editor_input(
     let ctx = egui_context.ctx_mut();
     if ctx.wants_pointer_input() {
         // GUI gets priority input
+        mouse.left_button_down = false;
+        mouse.middle_button_down = false;
+        mouse.right_button_down = false;
         return;
     }
 
