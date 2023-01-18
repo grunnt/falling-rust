@@ -138,7 +138,7 @@ impl Element {
         match self {
             Element::Fire => 8,
             Element::Acid => 32,
-            Element::Wood => 4,
+            Element::Wood => 16,
             Element::Oil => 1,
             Element::Lava => 64,
             Element::Smoke => 32,

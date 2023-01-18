@@ -350,7 +350,7 @@ fn update_drain(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
 }
 
 fn update_fire(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
-    let random = sandbox.random(8);
+    let random = sandbox.random(6);
     // Reduce fire strength over time
     if random > 4 && !sandbox.reduce_strength(x, y, 1) {
         sandbox.set_element(x, y, Element::Smoke);
@@ -359,6 +359,24 @@ fn update_fire(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
     // Make fire flicker
     let cell = sandbox.get_mut(x, y);
     cell.variant = (cell.variant + random as u8 * 10) % 255;
+    // Burn the neighbours
+    for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
+        let element = sandbox.get(nx, ny).element;
+        if element == Element::TNT || element == Element::Fuse {
+            // Ignite it
+            sandbox.get_mut(nx, ny).strength -= 1;
+            return false;
+        }
+        if element.burns() {
+            if element.form() == ElementForm::Solid && random > 3 {
+                // Sometimes solid burnable elements turn into ash
+                sandbox.get_mut(nx, ny).dissolve_to(Element::Ash);
+            } else {
+                sandbox.get_mut(nx, ny).dissolve_to(Element::Fire);
+            }
+            return false;
+        }
+    }
     // Move in a random direction, with a tendency upwards
     let (nx, ny) = match random {
         0 => (x, y + 1),
@@ -371,19 +389,6 @@ fn update_fire(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
     if element == Element::Air {
         sandbox.swap(x, y, nx, ny);
         return true;
-    }
-    if element == Element::TNT || element == Element::Fuse {
-        sandbox.get_mut(nx, ny).strength -= 1;
-        return false;
-    }
-    if element.burns() {
-        if element.form() == ElementForm::Solid && random > 3 {
-            // Sometimes burnable elements turn into ash
-            sandbox.get_mut(nx, ny).dissolve_to(Element::Ash);
-        } else {
-            sandbox.get_mut(nx, ny).dissolve_to(Element::Fire);
-        }
-        return false;
     }
     false
 }
