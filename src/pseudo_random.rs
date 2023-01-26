@@ -9,6 +9,10 @@ impl PseudoRandom {
         Self { next: 12345 }
     }
 
+    pub fn from_seed(seed: u32) -> Self {
+        Self { next: seed }
+    }
+
     pub fn next(&mut self) -> u32 {
         self.next ^= self.next << 13;
         self.next ^= self.next >> 17;

@@ -15,7 +15,8 @@ use bevy::prelude::*;
 use fill_browser::*;
 use gui::GuiPlugin;
 use pointer_input::PointerInputPlugin;
-use render::render_system;
+use pseudo_random::PseudoRandom;
+use render::{render_system, RenderState};
 use sandbox::*;
 use settings::Settings;
 use simulation::{simulation_system, Simulation};
@@ -49,6 +50,9 @@ pub fn start_app() {
         .init_resource::<Simulation>()
         .init_resource::<ToolBox>()
         .init_resource::<Settings>()
+        .insert_resource(RenderState {
+            random: PseudoRandom::new(),
+        })
         .add_startup_system(setup)
         .add_system(simulation_system)
         .add_system(render_system)

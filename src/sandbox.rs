@@ -92,7 +92,8 @@ impl SandBox {
         cell.element = element;
         cell.visited = self.visited_state;
         cell.strength = strength;
-        if element_type(element).randomize_color_factor > 0.0 {
+        let render = element_type(element).render;
+        if render == RenderMethod::VariantLinear || render == RenderMethod::Flicker {
             cell.variant = random as u8;
         }
     }

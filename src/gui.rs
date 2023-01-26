@@ -13,6 +13,7 @@ const ICON_SIZE: f32 = 64.0;
 use crate::{
     element::*,
     language::{element_names, get_text, Language},
+    pseudo_random::PseudoRandom,
     render::cell_color,
     sandbox::SandBox,
     settings::Settings,
@@ -209,7 +210,6 @@ pub fn gui_system(
                         element_button_click(ui, &mut gui, Element::Oil, &mut toolbox);
                         element_button_click(ui, &mut gui, Element::Lava, &mut toolbox);
                         element_button_click(ui, &mut gui, Element::Fire, &mut toolbox);
-                        element_button_click(ui, &mut gui, Element::Smoke, &mut toolbox);
                         element_button_click(ui, &mut gui, Element::Life, &mut toolbox);
                         element_button_click(ui, &mut gui, Element::Seed, &mut toolbox);
                         element_button_click(ui, &mut gui, Element::TNT, &mut toolbox);
@@ -594,6 +594,7 @@ pub fn generate_element_image(
     toolbox.apply(&mut sandbox, size / 2, size / 2);
 
     let mut img = ColorImage::new([size, size], Color32::TRANSPARENT);
+    let mut random = PseudoRandom::new();
 
     for y in 0..size {
         for x in 0..size {
@@ -602,8 +603,8 @@ pub fn generate_element_image(
             let (or, og, ob, oa) = (pixel.0[0], pixel.0[1], pixel.0[2], pixel.0[3]);
 
             // Get the element color
-            let cell = sandbox.get(x, y);
-            let (cr, cg, cb) = cell_color(cell);
+            let cell = sandbox.get_mut(x, y);
+            let (cr, cg, cb) = cell_color(cell, &mut random);
 
             // Do a simplified alpha blend between the two to soften the edges
             let dx = (center - x as isize).abs() as f32;

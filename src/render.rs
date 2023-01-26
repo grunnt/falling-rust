@@ -1,12 +1,19 @@
 use crate::cell::Cell;
-use crate::element::element_type;
-use crate::{element::Element, sandbox::SandBox};
+use crate::element::{element_type, RenderMethod};
+use crate::pseudo_random::PseudoRandom;
+use crate::sandbox::SandBox;
 use bevy::prelude::*;
 use bevy::utils::Instant;
+
+#[derive(Resource)]
+pub struct RenderState {
+    pub random: PseudoRandom,
+}
 
 // "Render" the world by copying the element cells to pixels on a texture
 pub fn render_system(
     mut images: ResMut<Assets<Image>>,
+    mut render_state: ResMut<RenderState>,
     mut sandbox: Query<(&mut SandBox, &Handle<Image>)>,
 ) {
     let sandbox = sandbox.get_single_mut();
@@ -16,13 +23,15 @@ pub fn render_system(
     }
     let (mut sandbox, image_handle) = sandbox.unwrap();
 
+    let random = &mut render_state.as_mut().random;
+
     let start = Instant::now();
 
     let image = images.get_mut(image_handle).unwrap();
     for y in 0..sandbox.height() {
         for x in 0..sandbox.width() {
-            let cell = sandbox.get(x, y);
-            let color = cell_color(cell);
+            let cell = sandbox.get_mut(x, y);
+            let color = cell_color(cell, random);
             let bytes_per_pixel = 4;
             let index = (x + y * sandbox.width()) * bytes_per_pixel;
             image.data[index] = color.0;
@@ -36,25 +45,46 @@ pub fn render_system(
     sandbox.render_time_ms = duration.as_millis();
 }
 
-pub fn cell_color(cell: &Cell) -> (u8, u8, u8) {
+pub fn cell_color(cell: &mut Cell, random: &mut PseudoRandom) -> (u8, u8, u8) {
     let element_type = element_type(cell.element);
-    let color = element_type.color;
-    let randomize_color_factor = element_type.randomize_color_factor;
-    let color = if cell.element == Element::Smoke {
-        let factor = 1.0 - (cell.strength as f32 / element_type.strength as f32);
-        let red = color.0 as f32 * factor;
-        let green = color.1 as f32 * factor;
-        let blue = color.2 as f32 * factor;
-        (red as u8, green as u8, blue as u8)
-    } else if randomize_color_factor > 0.0 {
-        let remainder = 1.0 - randomize_color_factor;
-        let factor = remainder + (cell.variant as f32 / 255.0) * randomize_color_factor;
-        let red = color.0 as f32 * factor;
-        let green = color.1 as f32 * factor;
-        let blue = color.2 as f32 * factor;
-        (red as u8, green as u8, blue as u8)
-    } else {
-        (color.0, color.1, color.2)
+    let color = match element_type.render {
+        RenderMethod::FixedColor => element_type.color_1,
+        RenderMethod::StrengthLinear => interpolate(
+            &element_type.color_1,
+            &element_type.color_2,
+            cell.strength,
+            element_type.strength,
+        ),
+        RenderMethod::VariantLinear => interpolate(
+            &element_type.color_1,
+            &element_type.color_2,
+            cell.variant,
+            u8::MAX,
+        ),
+        RenderMethod::Flicker => {
+            cell.variant = (cell.variant + random.next() as u8) % u8::MAX;
+            interpolate(
+                &element_type.color_1,
+                &element_type.color_2,
+                cell.variant,
+                u8::MAX,
+            )
+        }
     };
     color
+}
+
+pub fn interpolate(
+    color_1: &(u8, u8, u8),
+    color_2: &(u8, u8, u8),
+    factor: u8,
+    max: u8,
+) -> (u8, u8, u8) {
+    let factor_f32 = factor as f32 / max as f32;
+    let inv_factor_f32 = 1.0 - factor_f32;
+    (
+        (color_1.0 as f32 * factor_f32 + color_2.0 as f32 * inv_factor_f32) as u8,
+        (color_1.1 as f32 * factor_f32 + color_2.1 as f32 * inv_factor_f32) as u8,
+        (color_1.2 as f32 * factor_f32 + color_2.2 as f32 * inv_factor_f32) as u8,
+    )
 }

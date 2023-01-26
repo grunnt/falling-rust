@@ -284,7 +284,7 @@ fn handle_gas_form(sandbox: &mut SandBox, x: usize, y: usize, random: u32) -> bo
     let cell_element_type = element_type(cell.element);
 
     // Move in a random direction, with a tendency upwards
-    let (nx, ny) = match random % 5 {
+    let (nx, ny) = match random % 4 {
         0 => (x + 1, y),
         1 => (x - 1, y),
         _ => (x, y - 1),
@@ -367,13 +367,10 @@ fn update_drain(x: usize, y: usize, sandbox: &mut SandBox, _random: u32) -> bool
 
 fn update_fire(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
     // Reduce fire strength over time
-    if once_per(random, 5) && !sandbox.reduce_strength(x, y, 1) {
+    if once_per(random, 2) && sandbox.get_mut(x, y).dissolve_to(Element::Air) {
         sandbox.set_element(x, y, Element::Smoke, random);
         return true;
     }
-    // Make fire flicker
-    let cell = sandbox.get_mut(x, y);
-    cell.variant = (cell.variant + random as u8) % 255;
     false
 }
 
@@ -458,14 +455,13 @@ fn update_seed(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
 }
 
 fn update_plant(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
-    let random_1000 = random % 1000;
     let (cell_strength, cell_variant) = {
         let cell = sandbox.get(x, y);
         (cell.strength, cell.variant)
     };
     if cell_variant <= 1 {
         // Sometimes turns into seed
-        if random_1000 > 990 {
+        if once_per(random, 5) {
             sandbox.set_element(x, y, Element::Seed, random);
         }
     }
@@ -502,21 +498,20 @@ fn update_plant(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool 
         return false;
     }
     // Plant is still growing
-    if random_1000 > 970 {
-        let random = random_1000 - 980;
-        let (nx, ny) = match random {
-            0 | 1 => (x - 1, y),
-            2 | 3 => (x + 1, y),
-            _ => (x, y - 1),
-        };
-        let other_element = sandbox.get(nx, ny).element;
-        let new_cell_strength = cell_strength - 1;
-        if element_type(other_element).has_flag(FLAG_ALLOW_PLANT) {
-            sandbox.set_element_with_strength(nx, ny, Element::Plant, new_cell_strength, random);
-            sandbox.get_mut(nx, ny).variant = cell_variant - 1;
-            sandbox.reduce_strength(x, y, new_cell_strength);
-        }
+    let (nx, ny) = match random % 1000 {
+        0 | 1 => (x - 1, y),
+        2 | 3 => (x + 1, y),
+        4..=100 => (x, y - 1),
+        _ => return false,
+    };
+    let other_element = sandbox.get(nx, ny).element;
+    let new_cell_strength = cell_strength - 1;
+    if element_type(other_element).has_flag(FLAG_ALLOW_PLANT) {
+        sandbox.set_element_with_strength(nx, ny, Element::Plant, new_cell_strength, random);
+        sandbox.get_mut(nx, ny).variant = cell_variant - 1;
+        sandbox.reduce_strength(x, y, new_cell_strength);
     }
+
     false
 }
 
@@ -534,9 +529,6 @@ fn update_explosion(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> b
         sandbox.set_element(x, y, Element::Fire, random);
         return true;
     }
-    // Make explosion flicker
-    let cell = sandbox.get_mut(x, y);
-    cell.variant = (cell.variant + random as u8 % 64) % 255;
     // Spread explosion
     let strength = sandbox.get(x, y).strength;
     let neighbours = match random % 2 {
