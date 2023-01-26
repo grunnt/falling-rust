@@ -4,6 +4,7 @@ mod fill_browser;
 mod gui;
 mod language;
 mod pointer_input;
+mod pseudo_random;
 mod render;
 pub mod sandbox;
 mod settings;
@@ -19,6 +20,11 @@ use sandbox::*;
 use settings::Settings;
 use simulation::{simulation_system, Simulation};
 use toolbox::ToolBox;
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SystemLabel)]
+pub enum SystemOrderLabel {
+    PointerInput,
+}
 
 pub fn start_app() {
     App::new()

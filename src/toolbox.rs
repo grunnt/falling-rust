@@ -1,9 +1,7 @@
 use std::fmt;
 
-use crate::{element::Element, sandbox::SandBox};
+use crate::{element::Element, pseudo_random::PseudoRandom, sandbox::SandBox};
 use bevy::prelude::Resource;
-use rand::Rng;
-use rand_xoshiro::{rand_core::SeedableRng, Xoshiro256Plus};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Tool {
@@ -11,6 +9,7 @@ pub enum Tool {
     Circle,
     Square,
     Spray,
+    Fill,
 }
 
 #[derive(Resource)]
@@ -18,11 +17,11 @@ pub struct ToolBox {
     pub tool: Tool,
     pub element: Element,
     pub tool_size: usize,
-    random: Xoshiro256Plus,
+    pub random: PseudoRandom,
 }
 
 impl ToolBox {
-    pub fn apply(&mut self, level: &mut SandBox, x: usize, y: usize) {
+    pub fn apply(&mut self, sandbox: &mut SandBox, x: usize, y: usize) {
         let half_size = self.tool_size / 2;
         let remainder = if half_size == 0 {
             1
@@ -30,20 +29,20 @@ impl ToolBox {
             self.tool_size % half_size
         };
         let x1 = if x > half_size { x - half_size } else { 1 };
-        let x2 = if x + half_size + remainder < level.width() {
+        let x2 = if x + half_size + remainder < sandbox.width() {
             x + half_size + remainder
         } else {
-            level.width()
+            sandbox.width()
         };
         let y1 = if y > half_size { y - half_size } else { 1 };
-        let y2 = if y + half_size + remainder < level.height() {
+        let y2 = if y + half_size + remainder < sandbox.height() {
             y + half_size + remainder
         } else {
-            level.height()
+            sandbox.height()
         };
         match self.tool {
             Tool::Pixel => {
-                level.set_element(x, y, self.element);
+                sandbox.set_element(x, y, self.element, self.random.next());
             }
             Tool::Circle => {
                 let radius_sq = (half_size * half_size) as isize;
@@ -52,7 +51,7 @@ impl ToolBox {
                         let dx = (cx as isize - x as isize).abs();
                         let dy = (cy as isize - y as isize).abs();
                         if dx * dx + dy * dy <= radius_sq {
-                            level.set_element(cx, cy, self.element);
+                            sandbox.set_element(cx, cy, self.element, self.random.next());
                         }
                     }
                 }
@@ -60,7 +59,7 @@ impl ToolBox {
             Tool::Square => {
                 for cy in y1..y2 {
                     for cx in x1..x2 {
-                        level.set_element(cx, cy, self.element);
+                        sandbox.set_element(cx, cy, self.element, self.random.next());
                     }
                 }
             }
@@ -68,12 +67,35 @@ impl ToolBox {
                 let radius_sq = (half_size * half_size) as isize;
                 let count = if half_size > 3 { half_size / 3 } else { 1 };
                 for _ in 0..count {
-                    let cx = self.random.gen_range(x1..=x2 - 1);
-                    let cy = self.random.gen_range(y1..=y2 - 1);
+                    let cx = x1 + self.random.next() as usize % (x2 - x1);
+                    let cy = y1 + self.random.next() as usize % (y2 - y1);
                     let dx = (cx as isize - x as isize).abs();
                     let dy = (cy as isize - y as isize).abs();
                     if dx * dx + dy * dy <= radius_sq {
-                        level.set_element(cx, cy, self.element);
+                        sandbox.set_element(cx, cy, self.element, self.random.next());
+                    }
+                }
+            }
+            Tool::Fill => {
+                let mut checklist = Vec::new();
+                let element_to_replace = sandbox.get(x, y).element;
+                if element_to_replace == self.element
+                    || element_to_replace == Element::Indestructible
+                {
+                    return;
+                }
+                sandbox.set_element(x, y, self.element, self.random.next());
+                checklist.push((x, y));
+                while !checklist.is_empty() {
+                    let (x, y) = checklist.pop().unwrap();
+                    for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
+                        let neighbour_element = sandbox.get(nx, ny).element;
+                        if neighbour_element == element_to_replace
+                            && neighbour_element != Element::Indestructible
+                        {
+                            sandbox.set_element(nx, ny, self.element, self.random.next());
+                            checklist.push((nx, ny));
+                        }
                     }
                 }
             }
@@ -87,7 +109,7 @@ impl Default for ToolBox {
             tool: Tool::Circle,
             element: Element::Sand,
             tool_size: 8,
-            random: Xoshiro256Plus::from_entropy(),
+            random: PseudoRandom::new(),
         }
     }
 }

@@ -19,6 +19,7 @@ use crate::{
     simulation::Simulation,
     spawn_sandbox,
     toolbox::{Tool, ToolBox},
+    SystemOrderLabel,
 };
 
 pub struct GuiPlugin;
@@ -26,7 +27,7 @@ pub struct GuiPlugin;
 impl Plugin for GuiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugin(EguiPlugin)
-            .add_system(gui_system)
+            .add_system(gui_system.before(SystemOrderLabel::PointerInput))
             .add_startup_system(setup_gui);
     }
 }
@@ -49,6 +50,7 @@ pub struct SandboxGui {
     pub icon_square_handle: TextureHandle,
     pub icon_pencil_handle: TextureHandle,
     pub icon_spray_handle: TextureHandle,
+    pub icon_bucket_handle: TextureHandle,
     pub icon_play_handle: TextureHandle,
     pub icon_pause_handle: TextureHandle,
     pub icon_zoom_in_handle: TextureHandle,
@@ -57,7 +59,7 @@ pub struct SandboxGui {
     pub icon_settings_handle: TextureHandle,
     pub icon_eraser_handle: TextureHandle,
     pub icon_step_handle: TextureHandle,
-    pub element_icons: [TextureHandle; MAX_ELEMENT_ID as usize],
+    pub element_icons: [TextureHandle; ELEMENT_COUNT as usize],
     pub element_names: HashMap<Element, String>,
 }
 
@@ -207,6 +209,7 @@ pub fn gui_system(
                         element_button_click(ui, &mut gui, Element::Oil, &mut toolbox);
                         element_button_click(ui, &mut gui, Element::Lava, &mut toolbox);
                         element_button_click(ui, &mut gui, Element::Fire, &mut toolbox);
+                        element_button_click(ui, &mut gui, Element::Smoke, &mut toolbox);
                         element_button_click(ui, &mut gui, Element::Life, &mut toolbox);
                         element_button_click(ui, &mut gui, Element::Seed, &mut toolbox);
                         element_button_click(ui, &mut gui, Element::TNT, &mut toolbox);
@@ -283,7 +286,20 @@ pub fn gui_system(
                             toolbox.tool = Tool::Spray;
                             gui.mode = GuiMode::MainGui;
                         };
-                        if toolbox.tool != Tool::Pixel {
+                        if ui
+                            .add(
+                                egui::widgets::ImageButton::new(
+                                    &gui.icon_bucket_handle,
+                                    [ICON_SIZE, ICON_SIZE],
+                                )
+                                .frame(false),
+                            )
+                            .clicked()
+                        {
+                            toolbox.tool = Tool::Fill;
+                            gui.mode = GuiMode::MainGui;
+                        };
+                        if toolbox.tool != Tool::Pixel && toolbox.tool != Tool::Fill {
                             ui.add(egui::Slider::new(&mut toolbox.tool_size, 1..=64));
                         }
                     },
@@ -362,6 +378,7 @@ fn tool_gui(ui: &mut Ui, gui: &mut SandboxGui, toolbox: &mut ToolBox) {
             Tool::Circle => &gui.icon_circle_handle,
             Tool::Square => &gui.icon_square_handle,
             Tool::Spray => &gui.icon_spray_handle,
+            Tool::Fill => &gui.icon_bucket_handle,
         },
         [ICON_SIZE, ICON_SIZE],
     )
@@ -419,6 +436,7 @@ fn setup_gui(
         generate_element_image(Element::AcidSource, egui_context.as_mut(), &background),
         generate_element_image(Element::OilSource, egui_context.as_mut(), &background),
         generate_element_image(Element::FireSource, egui_context.as_mut(), &background),
+        generate_element_image(Element::LavaSource, egui_context.as_mut(), &background),
         generate_element_image(Element::Indestructible, egui_context.as_mut(), &background),
     ];
 
@@ -451,6 +469,11 @@ fn setup_gui(
             &mut egui_context,
             "icon_spray",
             include_bytes!("../assets/icon_spray.png"),
+        ),
+        icon_bucket_handle: add_icon(
+            &mut egui_context,
+            "icon_bucket",
+            include_bytes!("../assets/icon_bucket.png"),
         ),
         icon_play_handle: add_icon(
             &mut egui_context,
@@ -562,7 +585,7 @@ pub fn generate_element_image(
 ) -> TextureHandle {
     // Generate a tiny sandbox containing our element
     let size = 64;
-    let mut sandbox = SandBox::new(size, size, None);
+    let mut sandbox = SandBox::new(size, size);
     let mut toolbox = ToolBox::default();
     toolbox.element = element;
     toolbox.tool = Tool::Square;

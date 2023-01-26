@@ -1,4 +1,5 @@
 use crate::cell::Cell;
+use crate::element::element_type;
 use crate::{element::Element, sandbox::SandBox};
 use bevy::prelude::*;
 use bevy::utils::Instant;
@@ -36,10 +37,11 @@ pub fn render_system(
 }
 
 pub fn cell_color(cell: &Cell) -> (u8, u8, u8) {
-    let color = cell.element.color();
-    let randomize_color_factor = cell.element.randomize_color_factor();
+    let element_type = element_type(cell.element);
+    let color = element_type.color;
+    let randomize_color_factor = element_type.randomize_color_factor;
     let color = if cell.element == Element::Smoke {
-        let factor = 1.0 - (cell.strength as f32 / cell.element.strength() as f32);
+        let factor = 1.0 - (cell.strength as f32 / element_type.strength as f32);
         let red = color.0 as f32 * factor;
         let green = color.1 as f32 * factor;
         let blue = color.2 as f32 * factor;
@@ -51,12 +53,6 @@ pub fn cell_color(cell: &Cell) -> (u8, u8, u8) {
         let green = color.1 as f32 * factor;
         let blue = color.2 as f32 * factor;
         (red as u8, green as u8, blue as u8)
-    } else if cell.element.is_source() {
-        (
-            color.0.min(127) * 2,
-            color.1.min(127) * 2,
-            color.2.min(127) * 2,
-        )
     } else {
         (color.0, color.1, color.2)
     };

@@ -13,6 +13,7 @@ use crate::{
     gui::{GuiMode, SandboxGui},
     sandbox::SandBox,
     toolbox::ToolBox,
+    SystemOrderLabel,
 };
 
 /// Handles both mouse and touch input for the sandbox editor
@@ -20,13 +21,13 @@ pub struct PointerInputPlugin;
 
 impl Plugin for PointerInputPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<MouseInputState>()
-            .add_system(mouse_editor_input);
+        app.init_resource::<PointerInputState>()
+            .add_system(pointer_input.label(SystemOrderLabel::PointerInput));
     }
 }
 
 #[derive(Default, Resource)]
-pub struct MouseInputState {
+pub struct PointerInputState {
     pub left_button_down: bool,
     pub middle_button_down: bool,
     pub right_button_down: bool,
@@ -35,8 +36,8 @@ pub struct MouseInputState {
     pub world_position: Vec2,
 }
 
-pub fn mouse_editor_input(
-    mut mouse: ResMut<MouseInputState>,
+pub fn pointer_input(
+    mut mouse: ResMut<PointerInputState>,
     mut mouse_button_input_events: EventReader<MouseButtonInput>,
     mut cursor_moved_events: EventReader<CursorMoved>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
@@ -77,7 +78,11 @@ pub fn mouse_editor_input(
     }
 
     let ctx = egui_context.ctx_mut();
-    if ctx.wants_pointer_input() {
+    if ctx.wants_pointer_input()
+        || ctx.is_pointer_over_area()
+        || ctx.is_using_pointer()
+        || ctx.wants_pointer_input()
+    {
         // GUI gets priority input
         mouse.left_button_down = false;
         mouse.middle_button_down = false;

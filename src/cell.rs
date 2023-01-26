@@ -1,4 +1,4 @@
-use crate::element::Element;
+use crate::element::*;
 
 #[derive(Clone, Debug)]
 pub struct Cell {
@@ -15,8 +15,25 @@ impl Cell {
             false
         } else {
             self.element = element;
-            self.strength = element.strength();
+            self.strength = element_type(element).strength;
             true
         }
+    }
+
+    pub fn dissolve_to_with_speed(&mut self, element: Element, speed: u8) -> bool {
+        if self.strength > speed {
+            self.strength -= speed;
+            false
+        } else {
+            self.element = element;
+            self.strength = element_type(element).strength;
+            true
+        }
+    }
+
+    pub fn clear(&mut self) {
+        self.element = Element::Air;
+        self.strength = element_type(Element::Air).strength;
+        self.variant = 0;
     }
 }

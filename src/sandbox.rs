@@ -1,10 +1,8 @@
-use crate::{cell::*, element::Element};
+use crate::{cell::*, element::*};
 use bevy::{
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
-use rand::Rng;
-use rand_xoshiro::{rand_core::SeedableRng, Xoshiro256Plus};
 
 #[derive(Component)]
 pub struct SandBox {
@@ -12,31 +10,25 @@ pub struct SandBox {
     height: usize,
     cells: Vec<Cell>,
     visited_state: bool,
-    random: Xoshiro256Plus,
     pub render_time_ms: u128,
 }
 
 impl SandBox {
-    pub fn new(width: usize, height: usize, seed_opt: Option<u64>) -> Self {
-        let mut sandbox = SandBox::empty(width, height, seed_opt);
+    pub fn new(width: usize, height: usize) -> Self {
+        let mut sandbox = SandBox::empty(width, height);
         // Set indestructible pixels at the border to ease computations
         for x in 0..sandbox.width() {
-            sandbox.set_element(x, 0, Element::Indestructible);
-            sandbox.set_element(x, sandbox.height() - 1, Element::Indestructible);
+            sandbox.set_element(x, 0, Element::Indestructible, 0);
+            sandbox.set_element(x, sandbox.height() - 1, Element::Indestructible, 0);
         }
         for y in 0..sandbox.height() {
-            sandbox.set_element(0, y, Element::Indestructible);
-            sandbox.set_element(sandbox.width() - 1, y, Element::Indestructible);
+            sandbox.set_element(0, y, Element::Indestructible, 0);
+            sandbox.set_element(sandbox.width() - 1, y, Element::Indestructible, 0);
         }
         sandbox
     }
 
-    fn empty(width: usize, height: usize, seed_opt: Option<u64>) -> Self {
-        let random = if let Some(seed) = seed_opt {
-            Xoshiro256Plus::seed_from_u64(seed)
-        } else {
-            Xoshiro256Plus::from_entropy()
-        };
+    fn empty(width: usize, height: usize) -> Self {
         SandBox {
             width,
             height,
@@ -50,7 +42,6 @@ impl SandBox {
                 width * height
             ],
             visited_state: false,
-            random,
             render_time_ms: 0,
         }
     }
@@ -81,7 +72,7 @@ impl SandBox {
     }
 
     pub fn clear_cell(&mut self, x: usize, y: usize) {
-        self.set_element(x, y, Element::Air);
+        self.set_element(x, y, Element::Air, 0);
     }
 
     pub fn set_element_with_strength(
@@ -90,6 +81,7 @@ impl SandBox {
         y: usize,
         element: Element,
         strength: u8,
+        random: u32,
     ) {
         let index = self.index(x, y);
         let mut cell = &mut self.cells[index];
@@ -100,13 +92,13 @@ impl SandBox {
         cell.element = element;
         cell.visited = self.visited_state;
         cell.strength = strength;
-        if element.randomize_color_factor() > 0.0 {
-            cell.variant = self.random.gen();
+        if element_type(element).randomize_color_factor > 0.0 {
+            cell.variant = random as u8;
         }
     }
 
-    pub fn set_element(&mut self, x: usize, y: usize, element: Element) {
-        self.set_element_with_strength(x, y, element, element.strength());
+    pub fn set_element(&mut self, x: usize, y: usize, element: Element, random: u32) {
+        self.set_element_with_strength(x, y, element, element_type(element).strength, random);
     }
 
     pub fn swap(&mut self, x: usize, y: usize, x2: usize, y2: usize) {
@@ -147,18 +139,6 @@ impl SandBox {
         self.visited_state
     }
 
-    pub fn random_neighbour_x(&mut self, x: usize) -> usize {
-        if self.random.gen_range(0..1000) % 2 == 0 {
-            x + 1
-        } else {
-            x - 1
-        }
-    }
-
-    pub fn random(&mut self, max: usize) -> usize {
-        self.random.gen_range(0..1000 * max) % max
-    }
-
     pub fn clear(&mut self) {
         for y in 1..self.height - 1 {
             for x in 1..self.width - 1 {
@@ -191,7 +171,7 @@ pub fn spawn_sandbox(mut commands: Commands, images: &mut Assets<Image>, width: 
         images.add(image)
     };
     commands
-        .spawn(SandBox::new(width as usize, height as usize, None))
+        .spawn(SandBox::new(width as usize, height as usize))
         .insert(SpriteBundle {
             texture: image_handle,
             transform: Transform {
