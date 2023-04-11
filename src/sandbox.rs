@@ -4,6 +4,7 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 
+// The sandbox consisting of a grid of cells with elements that is simulated
 #[derive(Component)]
 pub struct SandBox {
     width: usize,

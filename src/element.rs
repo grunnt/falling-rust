@@ -2,6 +2,7 @@ use std::fmt;
 
 pub const ELEMENT_COUNT: usize = 26;
 
+// The different element types that live in a cell in the sand box
 #[repr(u8)]
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum Element {
@@ -45,6 +46,7 @@ pub const FLAG_IGNITES: u32 = 0b00000000000000000000000100000000;
 pub const FLAG_BLAST_RESISTANT: u32 = 0b00000000000000000000001000000000;
 pub const FLAG_ACIDIC: u32 = 0b00000000000000000000010000000000;
 
+// Definition of an element type
 #[derive(Clone, Debug)]
 pub struct ElementType {
     pub form: ElementForm,
@@ -68,6 +70,7 @@ pub fn element_type(element: Element) -> &'static ElementType {
     &ELEMENTS[element as usize]
 }
 
+// All element definitions. Note that the order must be identical to that in the Element enum.
 pub static ELEMENTS: [ElementType; ELEMENT_COUNT] = [
     // Air = 0
     ElementType {

@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::element::Element;
 
+// Simplistic translation system to let my kids play more easily
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum Language {
     English,

@@ -11,7 +11,7 @@ mod settings;
 pub mod simulation;
 mod toolbox;
 
-use bevy::prelude::*;
+use bevy::{prelude::*, window::WindowResolution};
 use fill_browser::*;
 use gui::GuiPlugin;
 use pointer_input::PointerInputPlugin;
@@ -22,7 +22,7 @@ use settings::Settings;
 use simulation::{simulation_system, Simulation};
 use toolbox::ToolBox;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SystemLabel)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SystemSet)]
 pub enum SystemOrderLabel {
     PointerInput,
 }
@@ -32,13 +32,12 @@ pub fn start_app() {
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
-                    window: WindowDescriptor {
+                    primary_window: Some(Window {
                         title: "Falling Rust".to_string(),
-                        width: 1024.,
-                        height: 600.,
+                        resolution: WindowResolution::new(1024.0, 600.0),
                         present_mode: bevy::window::PresentMode::Fifo,
                         ..default()
-                    },
+                    }),
                     ..default()
                 })
                 .set(ImagePlugin::default_nearest()),

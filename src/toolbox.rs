@@ -3,6 +3,7 @@ use std::fmt;
 use crate::{element::Element, pseudo_random::PseudoRandom, sandbox::SandBox};
 use bevy::prelude::Resource;
 
+// Tools for editing the world
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum Tool {
     Pixel,

@@ -3,29 +3,6 @@ use crate::pseudo_random::PseudoRandom;
 use crate::sandbox::*;
 use bevy::prelude::*;
 use bevy::utils::Instant;
-// Benchmark before using definition array:
-//      Running unittests src\main.rs (target\release\deps\falling_rust-bf178031cf941745.exe)
-//      Running benches\simulation_benchmark.rs (target\release\deps\simulation_benchmark-e6525c263ea205df.exe)
-// empty_simulation        time:   [46.014 µs 46.099 µs 46.194 µs]
-//                         change: [-4.6799% -3.4221% -2.1776%] (p = 0.00 < 0.05)
-//                         Performance has improved.
-// Found 14 outliers among 100 measurements (14.00%)
-//   5 (5.00%) high mild
-//   9 (9.00%) high severe
-
-// water_flow_simulation   time:   [312.18 µs 312.61 µs 313.06 µs]
-//                         change: [-0.7711% +0.3622% +1.8208%] (p = 0.57 > 0.05)
-//                         No change in performance detected.
-// Found 9 outliers among 100 measurements (9.00%)
-//   1 (1.00%) high mild
-//   8 (8.00%) high severe
-
-// burning_oil_simulation  time:   [89.116 µs 89.246 µs 89.379 µs]
-//                         change: [-1.1077% +0.0404% +1.4031%] (p = 0.95 > 0.05)
-//                         No change in performance detected.
-// Found 9 outliers among 100 measurements (9.00%)
-//   3 (3.00%) high mild
-//   6 (6.00%) high severe
 
 #[derive(Clone, Resource)]
 pub struct Simulation {
@@ -52,6 +29,7 @@ impl Simulation {
     }
 }
 
+// System used to simulate the world a single step each frame
 pub fn simulation_system(mut sandbox: Query<&mut SandBox>, mut simulation: ResMut<Simulation>) {
     match sandbox.get_single_mut() {
         Ok(mut sandbox) => {

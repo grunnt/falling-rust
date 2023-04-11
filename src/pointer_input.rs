@@ -6,7 +6,7 @@ use bevy::{
     prelude::*,
     render::camera::Camera,
 };
-use bevy_egui::EguiContext;
+use bevy_egui::EguiContexts;
 
 use crate::{
     element::Element,
@@ -22,7 +22,7 @@ pub struct PointerInputPlugin;
 impl Plugin for PointerInputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PointerInputState>()
-            .add_system(pointer_input.label(SystemOrderLabel::PointerInput));
+            .add_system(pointer_input.in_set(SystemOrderLabel::PointerInput));
     }
 }
 
@@ -42,7 +42,7 @@ pub fn pointer_input(
     mut cursor_moved_events: EventReader<CursorMoved>,
     mut mouse_wheel_events: EventReader<MouseWheel>,
     mut camera: Query<(&Camera, &mut Transform, &GlobalTransform)>,
-    mut egui_context: ResMut<EguiContext>,
+    mut egui_context: EguiContexts,
     mut toolbox: ResMut<ToolBox>,
     mut sandbox: Query<&mut SandBox>,
     gui: Res<SandboxGui>,
