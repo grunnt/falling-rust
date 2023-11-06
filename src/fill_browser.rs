@@ -11,7 +11,7 @@ impl Plugin for FillBrowserWindowPlugin {
         {
             return;
         }
-        app.add_system(browser_filler);
+        app.add_systems(Update, browser_filler);
     }
 }
 

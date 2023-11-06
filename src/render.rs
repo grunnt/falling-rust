@@ -1,9 +1,10 @@
+use bevy::prelude::*;
+use bevy::utils::Instant;
+
 use crate::cell::Cell;
 use crate::element::{element_type, RenderMethod};
 use crate::pseudo_random::PseudoRandom;
 use crate::sandbox::SandBox;
-use bevy::prelude::*;
-use bevy::utils::Instant;
 
 #[derive(Resource)]
 pub struct RenderState {
@@ -62,7 +63,7 @@ pub fn cell_color(cell: &mut Cell, random: &mut PseudoRandom) -> (u8, u8, u8) {
             u8::MAX,
         ),
         RenderMethod::Flicker => {
-            cell.variant = (cell.variant + random.next() as u8) % u8::MAX;
+            cell.variant = ((cell.variant as u32 + random.next()) % 255) as u8;
             interpolate(
                 &element_type.color_1,
                 &element_type.color_2,

@@ -1,7 +1,7 @@
 use bevy::{
     input::{
-        mouse::{MouseButtonInput, MouseWheel},
         ButtonState,
+        mouse::{MouseButtonInput, MouseWheel},
     },
     prelude::*,
     render::camera::Camera,
@@ -12,8 +12,8 @@ use crate::{
     element::Element,
     gui::{GuiMode, SandboxGui},
     sandbox::SandBox,
-    toolbox::ToolBox,
     SystemOrderLabel,
+    toolbox::ToolBox,
 };
 
 /// Handles both mouse and touch input for the sandbox editor
@@ -22,7 +22,7 @@ pub struct PointerInputPlugin;
 impl Plugin for PointerInputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PointerInputState>()
-            .add_system(pointer_input.in_set(SystemOrderLabel::PointerInput));
+            .add_systems(PreUpdate, pointer_input.in_set(SystemOrderLabel::PointerInput));
     }
 }
 
@@ -48,7 +48,7 @@ pub fn pointer_input(
     gui: Res<SandboxGui>,
 ) {
     // Determine button state
-    for event in mouse_button_input_events.iter() {
+    for event in mouse_button_input_events.read() {
         if event.button == MouseButton::Left {
             mouse.left_button_down = event.state == ButtonState::Pressed;
         }
@@ -62,7 +62,7 @@ pub fn pointer_input(
 
     // Record latest position
     let last_position = mouse.position;
-    for event in cursor_moved_events.iter() {
+    for event in cursor_moved_events.read() {
         mouse.position = event.position;
     }
     mouse.drag_movement = if mouse.left_button_down || mouse.middle_button_down {
@@ -73,7 +73,7 @@ pub fn pointer_input(
 
     // Check mouse wheel
     let mut wheel_y = 0.0;
-    for event in mouse_wheel_events.iter() {
+    for event in mouse_wheel_events.read() {
         wheel_y += event.y;
     }
 

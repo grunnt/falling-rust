@@ -1,16 +1,3 @@
-mod cell;
-pub mod element;
-mod fill_browser;
-mod gui;
-mod language;
-mod pointer_input;
-mod pseudo_random;
-mod render;
-pub mod sandbox;
-mod settings;
-pub mod simulation;
-mod toolbox;
-
 use bevy::{prelude::*, window::WindowResolution};
 use fill_browser::*;
 use gui::GuiPlugin;
@@ -18,9 +5,19 @@ use pointer_input::PointerInputPlugin;
 use pseudo_random::PseudoRandom;
 use render::{render_system, RenderState};
 use sandbox::*;
-use settings::Settings;
-use simulation::{simulation_system, Simulation};
+use simulation::{Simulation, simulation_system};
 use toolbox::ToolBox;
+
+mod cell;
+pub mod element;
+mod fill_browser;
+mod gui;
+mod pointer_input;
+mod pseudo_random;
+mod render;
+pub mod sandbox;
+pub mod simulation;
+mod toolbox;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, SystemSet)]
 pub enum SystemOrderLabel {
@@ -42,19 +39,17 @@ pub fn start_app() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
-        .add_plugin(FillBrowserWindowPlugin)
-        .add_plugin(GuiPlugin)
-        .add_plugin(PointerInputPlugin)
+        .add_plugins(FillBrowserWindowPlugin)
+        .add_plugins(GuiPlugin)
+        .add_plugins(PointerInputPlugin)
         .insert_resource(ClearColor(Color::rgb(0.0, 0.0, 0.0)))
         .init_resource::<Simulation>()
         .init_resource::<ToolBox>()
-        .init_resource::<Settings>()
         .insert_resource(RenderState {
             random: PseudoRandom::new(),
         })
-        .add_startup_system(setup)
-        .add_system(simulation_system)
-        .add_system(render_system)
+        .add_systems(Startup, setup)
+        .add_systems(Update, (simulation_system, render_system).chain())
         .run();
 }
 

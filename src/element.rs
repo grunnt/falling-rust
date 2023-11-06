@@ -34,6 +34,37 @@ pub enum Element {
     Indestructible = 25,
 }
 
+pub fn element_name(element: Element) -> &'static str {
+    match element {
+        Element::Air => "Air",
+        Element::Sand => "Sand",
+        Element::Rock => "Rock",
+        Element::Water => "Water",
+        Element::Acid => "Acid",
+        Element::Drain => "Drain",
+        Element::Wood => "Wood",
+        Element::Iron => "Iron",
+        Element::Rust => "Rust",
+        Element::Fire => "Fire",
+        Element::Ash => "Ash",
+        Element::Oil => "Oil",
+        Element::Lava => "Lava",
+        Element::Smoke => "Smoke",
+        Element::Life => "Life",
+        Element::Seed => "Seed",
+        Element::Plant => "Plant",
+        Element::TNT => "TNT",
+        Element::Fuse => "Fuse",
+        Element::Explosion => "Explosion",
+        Element::WaterSource => "Water source",
+        Element::AcidSource => "Acid source",
+        Element::OilSource => "Oil source",
+        Element::FireSource => "Fire source",
+        Element::LavaSource => "Lava source",
+        Element::Indestructible => "Indestructible",
+    }
+}
+
 pub const FLAG_DISSOLVES_IN_ACID: u32 = 0b00000000000000000000000000000001;
 pub const FLAG_BURNS: u32 = 0b00000000000000000000000000000010;
 pub const FLAG_CAUSES_RUST: u32 = 0b00000000000000000000000000000100;

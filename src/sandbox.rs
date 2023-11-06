@@ -1,8 +1,9 @@
-use crate::{cell::*, element::*};
 use bevy::{
     prelude::*,
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
+
+use crate::{cell::*, element::*};
 
 // The sandbox consisting of a grid of cells with elements that is simulated
 #[derive(Component)]
@@ -85,7 +86,7 @@ impl SandBox {
         random: u32,
     ) {
         let index = self.index(x, y);
-        let mut cell = &mut self.cells[index];
+        let cell = &mut self.cells[index];
         if cell.element == Element::Indestructible {
             // Cannot edit these blocks
             return;
@@ -145,7 +146,7 @@ impl SandBox {
         for y in 1..self.height - 1 {
             for x in 1..self.width - 1 {
                 let index = self.index(x, y);
-                let mut cell = &mut self.cells[index];
+                let cell = &mut self.cells[index];
                 cell.element = Element::Air;
                 cell.visited = self.visited_state;
             }

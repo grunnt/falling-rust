@@ -1,35 +1,30 @@
-use std::collections::HashMap;
-
 use bevy::prelude::*;
 use bevy_egui::{
-    egui::{self, style::*, Color32, ColorImage, Frame, Layout, Response, TextureHandle, Ui},
+    egui::{self, Color32, ColorImage, Frame, Layout, Response, style::*, TextureHandle, Ui},
     EguiContexts, EguiPlugin,
 };
 use egui::{Align2, FontId, Mesh, Pos2, Rect, Shape, Vec2};
 use image::{DynamicImage, GenericImageView};
 
-const ICON_SIZE: f32 = 64.0;
-
 use crate::{
     element::*,
-    language::{element_names, get_text, Language},
     pseudo_random::PseudoRandom,
     render::cell_color,
     sandbox::SandBox,
-    settings::Settings,
     simulation::Simulation,
     spawn_sandbox,
     toolbox::{Tool, ToolBox},
-    SystemOrderLabel,
 };
+
+const ICON_SIZE: f32 = 64.0;
 
 pub struct GuiPlugin;
 
 impl Plugin for GuiPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugin(EguiPlugin)
-            .add_system(gui_system.before(SystemOrderLabel::PointerInput))
-            .add_startup_system(setup_gui);
+        app.add_plugins(EguiPlugin)
+             .add_systems(Startup, setup_gui)
+             .add_systems(Update, gui_system);
     }
 }
 
@@ -60,405 +55,12 @@ pub struct SandboxGui {
     pub icon_settings_handle: TextureHandle,
     pub icon_eraser_handle: TextureHandle,
     pub icon_step_handle: TextureHandle,
-    pub element_icons: [TextureHandle; ELEMENT_COUNT as usize],
-    pub element_names: HashMap<Element, String>,
+    pub element_icons: [TextureHandle; ELEMENT_COUNT],
 }
 
-// Simple GUI for use both in desktop and touchscreen (via web) applications
-pub fn gui_system(
-    mut egui_contexts: EguiContexts,
-    mut camera: Query<&mut Transform, With<Camera>>,
-    mut gui: ResMut<SandboxGui>,
-    settings: ResMut<Settings>,
-    mut toolbox: ResMut<ToolBox>,
-    mut simulation: ResMut<Simulation>,
-    sandbox: Query<(Entity, &mut SandBox)>,
-    commands: Commands,
-    images: ResMut<Assets<Image>>,
-) {
-    side_panel_right(
-        &mut egui_contexts,
-        &mut gui,
-        &mut simulation,
-        camera.single_mut().as_mut(),
-    );
-
-    bottom_panel(&mut egui_contexts, &mut gui, &mut toolbox);
-
-    if gui.mode == GuiMode::SandboxSettings {
-        side_panel_left_settings(
-            &mut egui_contexts,
-            sandbox,
-            settings,
-            commands,
-            images,
-            &simulation,
-            &mut gui,
-        );
-    } else if gui.mode == GuiMode::ElementSelect {
-        side_panel_left_select_element(&mut egui_contexts, &mut gui, &mut toolbox);
-    } else if gui.mode == GuiMode::ToolSelect {
-        side_panel_left_tool_select(egui_contexts, gui, toolbox);
-    }
-}
-
-// Select a tool for world editing
-fn side_panel_left_tool_select(
-    mut egui_contexts: EguiContexts,
-    mut gui: ResMut<SandboxGui>,
-    mut toolbox: ResMut<ToolBox>,
-) {
-    egui::CentralPanel::default()
-        .frame(Frame::none())
-        .show(egui_contexts.ctx_mut(), |ui| {
-            ui.with_layout(
-                Layout::from_main_dir_and_cross_align(
-                    egui::Direction::LeftToRight,
-                    egui::Align::Min,
-                )
-                .with_main_wrap(true),
-                |ui| {
-                    if ui
-                        .add(
-                            egui::widgets::ImageButton::new(
-                                &gui.icon_pencil_handle,
-                                [ICON_SIZE, ICON_SIZE],
-                            )
-                            .frame(false),
-                        )
-                        .clicked()
-                    {
-                        toolbox.tool = Tool::Pixel;
-                        gui.mode = GuiMode::MainGui;
-                    };
-                    if ui
-                        .add(
-                            egui::widgets::ImageButton::new(
-                                &gui.icon_circle_handle,
-                                [ICON_SIZE, ICON_SIZE],
-                            )
-                            .frame(false),
-                        )
-                        .clicked()
-                    {
-                        toolbox.tool = Tool::Circle;
-                        gui.mode = GuiMode::MainGui;
-                    };
-                    if ui
-                        .add(
-                            egui::widgets::ImageButton::new(
-                                &gui.icon_square_handle,
-                                [ICON_SIZE, ICON_SIZE],
-                            )
-                            .frame(false),
-                        )
-                        .clicked()
-                    {
-                        toolbox.tool = Tool::Square;
-                        gui.mode = GuiMode::MainGui;
-                    };
-                    if ui
-                        .add(
-                            egui::widgets::ImageButton::new(
-                                &gui.icon_spray_handle,
-                                [ICON_SIZE, ICON_SIZE],
-                            )
-                            .frame(false),
-                        )
-                        .clicked()
-                    {
-                        toolbox.tool = Tool::Spray;
-                        gui.mode = GuiMode::MainGui;
-                    };
-                    if ui
-                        .add(
-                            egui::widgets::ImageButton::new(
-                                &gui.icon_bucket_handle,
-                                [ICON_SIZE, ICON_SIZE],
-                            )
-                            .frame(false),
-                        )
-                        .clicked()
-                    {
-                        toolbox.tool = Tool::Fill;
-                        gui.mode = GuiMode::MainGui;
-                    };
-                    if toolbox.tool != Tool::Pixel && toolbox.tool != Tool::Fill {
-                        ui.add(egui::Slider::new(&mut toolbox.tool_size, 1..=64));
-                    }
-                },
-            );
-        });
-}
-
-// Select an element to use in world editing
-fn side_panel_left_select_element(
-    egui_contexts: &mut EguiContexts,
-    gui: &mut ResMut<SandboxGui>,
-    toolbox: &mut ResMut<ToolBox>,
-) {
-    egui::CentralPanel::default()
-        .frame(Frame::none())
-        .show(egui_contexts.ctx_mut(), |ui| {
-            ui.with_layout(
-                Layout::from_main_dir_and_cross_align(
-                    egui::Direction::LeftToRight,
-                    egui::Align::Min,
-                )
-                .with_main_wrap(true),
-                |ui| {
-                    element_button_click(ui, gui, Element::Sand, toolbox);
-                    element_button_click(ui, gui, Element::Wood, toolbox);
-                    element_button_click(ui, gui, Element::Iron, toolbox);
-                    element_button_click(ui, gui, Element::Rock, toolbox);
-                    element_button_click(ui, gui, Element::Water, toolbox);
-                    element_button_click(ui, gui, Element::Acid, toolbox);
-                    element_button_click(ui, gui, Element::Oil, toolbox);
-                    element_button_click(ui, gui, Element::Lava, toolbox);
-                    element_button_click(ui, gui, Element::Fire, toolbox);
-                    element_button_click(ui, gui, Element::Life, toolbox);
-                    element_button_click(ui, gui, Element::Seed, toolbox);
-                    element_button_click(ui, gui, Element::TNT, toolbox);
-                    element_button_click(ui, gui, Element::Fuse, toolbox);
-                    element_button_click(ui, gui, Element::WaterSource, toolbox);
-                    element_button_click(ui, gui, Element::AcidSource, toolbox);
-                    element_button_click(ui, gui, Element::LavaSource, toolbox);
-                    element_button_click(ui, gui, Element::FireSource, toolbox);
-                    element_button_click(ui, gui, Element::Drain, toolbox);
-                },
-            );
-        });
-}
-
-// World settings panel
-fn side_panel_left_settings(
-    egui_contexts: &mut EguiContexts,
-    mut sandbox: Query<(Entity, &mut SandBox)>,
-    mut settings: ResMut<Settings>,
-    mut commands: Commands,
-    mut images: ResMut<Assets<Image>>,
-    simulation: &Simulation,
-    gui: &mut ResMut<SandboxGui>,
-) {
-    egui::SidePanel::left("settings").show(egui_contexts.ctx_mut(), |ui| {
-        let (entity, sandbox) = sandbox.single_mut();
-        egui::ComboBox::from_label(get_text("size", settings.language))
-            .selected_text(format!(
-                "{}x{}",
-                settings.sandbox_size, settings.sandbox_size
-            ))
-            .show_ui(ui, |ui| {
-                ui.selectable_value(&mut settings.sandbox_size, 64, "64x64");
-                ui.selectable_value(&mut settings.sandbox_size, 128, "128x128");
-                ui.selectable_value(&mut settings.sandbox_size, 256, "256x256");
-                ui.selectable_value(&mut settings.sandbox_size, 512, "512x512");
-                ui.selectable_value(&mut settings.sandbox_size, 1024, "1024x1024");
-            });
-        if ui.button(get_text("new", settings.language)).clicked() {
-            commands.entity(entity).despawn();
-            spawn_sandbox(
-                commands,
-                images.as_mut(),
-                settings.sandbox_size,
-                settings.sandbox_size,
-            );
-            gui.mode = GuiMode::MainGui;
-        }
-        ui.separator();
-        let previous_language = settings.language;
-        egui::ComboBox::from_label(get_text("language", settings.language))
-            .selected_text(format!("{:?}", settings.language))
-            .show_ui(ui, |ui| {
-                ui.selectable_value(&mut settings.language, Language::English, "English");
-                ui.selectable_value(&mut settings.language, Language::Nederlands, "Nederlands");
-            });
-        if settings.language != previous_language {
-            gui.element_names = element_names(settings.language);
-        }
-        ui.separator();
-        ui.label(format!(
-            "{}: {} ms",
-            get_text("simulation", settings.language),
-            simulation.frame_time_ms
-        ));
-        ui.label(format!(
-            "{}: {} ms",
-            get_text("render", settings.language),
-            sandbox.render_time_ms
-        ));
-        ui.separator();
-        ui.hyperlink_to("Made by Bas", "https://www.basvs.dev");
-    });
-}
-
-fn bottom_panel(
-    egui_contexts: &mut EguiContexts,
-    gui: &mut ResMut<SandboxGui>,
-    toolbox: &mut ResMut<ToolBox>,
-) {
-    egui::TopBottomPanel::bottom("bottom_panel")
-        .frame(Frame::none())
-        .show_separator_line(false)
-        .resizable(false)
-        .show(egui_contexts.ctx_mut(), |ui| {
-            ui.horizontal(|ui| {
-                let eraser_button = egui::widgets::ImageButton::new(
-                    &gui.icon_eraser_handle,
-                    [ICON_SIZE, ICON_SIZE],
-                )
-                .frame(false);
-                let eraser_button = if toolbox.element == Element::Air {
-                    eraser_button.tint(Color32::LIGHT_GREEN)
-                } else {
-                    eraser_button
-                };
-                if ui.add(eraser_button).clicked() {
-                    if toolbox.element == Element::Air {
-                        toolbox.element = gui.last_element;
-                    } else {
-                        toolbox.element = Element::Air;
-                    }
-                };
-
-                if element_button(ui, gui, toolbox.element).clicked() {
-                    if gui.mode == GuiMode::ElementSelect {
-                        gui.mode = GuiMode::MainGui;
-                    } else {
-                        gui.mode = GuiMode::ElementSelect;
-                    }
-                };
-
-                let tool_button = egui::widgets::ImageButton::new(
-                    match toolbox.tool {
-                        Tool::Pixel => &gui.icon_pencil_handle,
-                        Tool::Circle => &gui.icon_circle_handle,
-                        Tool::Square => &gui.icon_square_handle,
-                        Tool::Spray => &gui.icon_spray_handle,
-                        Tool::Fill => &gui.icon_bucket_handle,
-                    },
-                    [ICON_SIZE, ICON_SIZE],
-                )
-                .frame(false);
-                let tool_button = if gui.mode == GuiMode::ToolSelect {
-                    tool_button.tint(Color32::LIGHT_GREEN)
-                } else {
-                    tool_button
-                };
-                if ui.add(tool_button).clicked() {
-                    if gui.mode == GuiMode::ToolSelect {
-                        gui.mode = GuiMode::MainGui;
-                    } else {
-                        gui.mode = GuiMode::ToolSelect;
-                    }
-                };
-            });
-        });
-}
-
-fn side_panel_right(
-    egui_contexts: &mut EguiContexts,
-    gui: &mut ResMut<SandboxGui>,
-    simulation: &mut ResMut<Simulation>,
-    transform: &mut Transform,
-) {
-    egui::SidePanel::right("right_panel")
-        .frame(Frame::none())
-        .show_separator_line(false)
-        .resizable(false)
-        .min_width(ICON_SIZE)
-        .show(egui_contexts.ctx_mut(), |ui| {
-            let settings_button =
-                egui::widgets::ImageButton::new(&gui.icon_settings_handle, [ICON_SIZE, ICON_SIZE])
-                    .frame(false);
-            let settings_button = if gui.mode == GuiMode::SandboxSettings {
-                settings_button.tint(Color32::LIGHT_GREEN)
-            } else {
-                settings_button
-            };
-            if ui.add(settings_button).clicked() {
-                gui.mode = if gui.mode == GuiMode::SandboxSettings {
-                    GuiMode::MainGui
-                } else {
-                    GuiMode::SandboxSettings
-                }
-            };
-            if ui
-                .add(
-                    egui::widgets::ImageButton::new(
-                        if simulation.running {
-                            &gui.icon_play_handle
-                        } else {
-                            &gui.icon_pause_handle
-                        },
-                        [ICON_SIZE, ICON_SIZE],
-                    )
-                    .frame(false),
-                )
-                .clicked()
-            {
-                simulation.running = !simulation.running;
-            };
-            if !simulation.running {
-                if ui
-                    .add(
-                        egui::widgets::ImageButton::new(
-                            &gui.icon_step_handle,
-                            [ICON_SIZE, ICON_SIZE],
-                        )
-                        .frame(false),
-                    )
-                    .clicked()
-                {
-                    simulation.step = true;
-                };
-            }
-
-            if ui
-                .add(
-                    egui::widgets::ImageButton::new(
-                        &gui.icon_zoom_in_handle,
-                        [ICON_SIZE, ICON_SIZE],
-                    )
-                    .frame(false),
-                )
-                .clicked()
-            {
-                transform.scale.x = (transform.scale.x * 0.9).clamp(0.1, 1.0);
-                transform.scale.y = (transform.scale.y * 0.9).clamp(0.1, 1.0);
-            };
-            if ui
-                .add(
-                    egui::widgets::ImageButton::new(
-                        &gui.icon_zoom_out_handle,
-                        [ICON_SIZE, ICON_SIZE],
-                    )
-                    .frame(false),
-                )
-                .clicked()
-            {
-                transform.scale.x = (transform.scale.x * 1.1).clamp(0.1, 1.0);
-                transform.scale.y = (transform.scale.y * 1.1).clamp(0.1, 1.0);
-            };
-            let move_button =
-                egui::widgets::ImageButton::new(&gui.icon_move_handle, [ICON_SIZE, ICON_SIZE])
-                    .frame(false);
-            let move_button = if gui.mode == GuiMode::MoveView {
-                move_button.tint(Color32::LIGHT_GREEN)
-            } else {
-                move_button
-            };
-            if ui.add(move_button).clicked() {
-                gui.mode = if gui.mode == GuiMode::MoveView {
-                    GuiMode::MainGui
-                } else {
-                    GuiMode::MoveView
-                }
-            };
-        });
-}
 
 // System for initializing the gui style and generating element icons
-fn setup_gui(mut commands: Commands, mut egui_contexts: EguiContexts, settings: Res<Settings>) {
+fn setup_gui(mut commands: Commands, mut egui_contexts: EguiContexts) {
     // General styling
     let mut style = egui::Style::default();
     style.spacing = Spacing::default();
@@ -496,8 +98,6 @@ fn setup_gui(mut commands: Commands, mut egui_contexts: EguiContexts, settings: 
         generate_element_image(Element::LavaSource, &mut egui_contexts, &background),
         generate_element_image(Element::Indestructible, &mut egui_contexts, &background),
     ];
-
-    let element_names = element_names(settings.language);
 
     commands.insert_resource(SandboxGui {
         mode: GuiMode::MainGui,
@@ -573,8 +173,380 @@ fn setup_gui(mut commands: Commands, mut egui_contexts: EguiContexts, settings: 
             include_bytes!("../assets/icon_step.png"),
         ),
         element_icons,
-        element_names,
     });
+}
+
+// Simple GUI for use both in desktop and touchscreen (via web) applications
+pub fn gui_system(
+    mut egui_contexts: EguiContexts,
+    mut camera: Query<&mut Transform, With<Camera>>,
+    mut gui: ResMut<SandboxGui>,
+    mut toolbox: ResMut<ToolBox>,
+    mut simulation: ResMut<Simulation>,
+    sandbox: Query<(Entity, &mut SandBox)>,
+    commands: Commands,
+    images: ResMut<Assets<Image>>,
+) {
+    right_side_toolbar(
+        &mut egui_contexts,
+        &mut gui,
+        &mut simulation,
+        camera.single_mut().as_mut(),
+    );
+
+    bottom_toolbar(&mut egui_contexts, &mut gui, &mut toolbox);
+
+    if gui.mode == GuiMode::SandboxSettings {
+        settings_panel(
+            &mut egui_contexts,
+            sandbox,
+            commands,
+            images,
+            &simulation,
+            &mut gui,
+        );
+    } else if gui.mode == GuiMode::ElementSelect {
+        element_select_panel(&mut egui_contexts, &mut gui, &mut toolbox);
+    } else if gui.mode == GuiMode::ToolSelect {
+        side_panel_left_tool_select(egui_contexts, gui, toolbox);
+    }
+}
+
+// Select a tool for world editing
+fn side_panel_left_tool_select(
+    mut egui_contexts: EguiContexts,
+    mut gui: ResMut<SandboxGui>,
+    mut toolbox: ResMut<ToolBox>,
+) {
+    egui::CentralPanel::default()
+        .frame(Frame::none())
+        .show(egui_contexts.ctx_mut(), |ui| {
+            ui.with_layout(
+                Layout::from_main_dir_and_cross_align(
+                    egui::Direction::LeftToRight,
+                    egui::Align::Min,
+                )
+                    .with_main_wrap(true),
+                |ui| {
+                    if ui
+                        .add(
+                            egui::widgets::ImageButton::new(
+                                &gui.icon_pencil_handle,
+                            )
+                                .frame(false),
+                        )
+                        .clicked()
+                    {
+                        toolbox.tool = Tool::Pixel;
+                        gui.mode = GuiMode::MainGui;
+                    };
+                    if ui
+                        .add(
+                            egui::widgets::ImageButton::new(
+                                &gui.icon_circle_handle,
+                            )
+                                .frame(false),
+                        )
+                        .clicked()
+                    {
+                        toolbox.tool = Tool::Circle;
+                        gui.mode = GuiMode::MainGui;
+                    };
+                    if ui
+                        .add(
+                            egui::widgets::ImageButton::new(
+                                &gui.icon_square_handle,
+                            )
+                                .frame(false),
+                        )
+                        .clicked()
+                    {
+                        toolbox.tool = Tool::Square;
+                        gui.mode = GuiMode::MainGui;
+                    };
+                    if ui
+                        .add(
+                            egui::widgets::ImageButton::new(
+                                &gui.icon_spray_handle,
+                            )
+                                .frame(false),
+                        )
+                        .clicked()
+                    {
+                        toolbox.tool = Tool::Spray;
+                        gui.mode = GuiMode::MainGui;
+                    };
+                    if ui
+                        .add(
+                            egui::widgets::ImageButton::new(
+                                &gui.icon_bucket_handle,
+                            )
+                                .frame(false),
+                        )
+                        .clicked()
+                    {
+                        toolbox.tool = Tool::Fill;
+                        gui.mode = GuiMode::MainGui;
+                    };
+                    if toolbox.tool != Tool::Pixel && toolbox.tool != Tool::Fill {
+                        ui.add(egui::Slider::new(&mut toolbox.tool_size, 1..=64));
+                    }
+                },
+            );
+        });
+}
+
+// Select an element to use in world editing
+fn element_select_panel(
+    egui_contexts: &mut EguiContexts,
+    gui: &mut ResMut<SandboxGui>,
+    toolbox: &mut ResMut<ToolBox>,
+) {
+    egui::CentralPanel::default()
+        .frame(Frame::none())
+        .show(egui_contexts.ctx_mut(), |ui| {
+            ui.with_layout(
+                Layout::from_main_dir_and_cross_align(
+                    egui::Direction::LeftToRight,
+                    egui::Align::Min,
+                )
+                    .with_main_wrap(true),
+                |ui| {
+                    element_button_click(ui, gui, Element::Sand, toolbox);
+                    element_button_click(ui, gui, Element::Wood, toolbox);
+                    element_button_click(ui, gui, Element::Iron, toolbox);
+                    element_button_click(ui, gui, Element::Rock, toolbox);
+                    element_button_click(ui, gui, Element::Water, toolbox);
+                    element_button_click(ui, gui, Element::Acid, toolbox);
+                    element_button_click(ui, gui, Element::Oil, toolbox);
+                    element_button_click(ui, gui, Element::Lava, toolbox);
+                    element_button_click(ui, gui, Element::Fire, toolbox);
+                    element_button_click(ui, gui, Element::Life, toolbox);
+                    element_button_click(ui, gui, Element::Seed, toolbox);
+                    element_button_click(ui, gui, Element::TNT, toolbox);
+                    element_button_click(ui, gui, Element::Fuse, toolbox);
+                    element_button_click(ui, gui, Element::WaterSource, toolbox);
+                    element_button_click(ui, gui, Element::AcidSource, toolbox);
+                    element_button_click(ui, gui, Element::LavaSource, toolbox);
+                    element_button_click(ui, gui, Element::FireSource, toolbox);
+                    element_button_click(ui, gui, Element::Drain, toolbox);
+                },
+            );
+        });
+}
+
+// World settings panel
+fn settings_panel(
+    egui_contexts: &mut EguiContexts,
+    mut sandbox: Query<(Entity, &mut SandBox)>,
+    mut commands: Commands,
+    mut images: ResMut<Assets<Image>>,
+    simulation: &Simulation,
+    gui: &mut ResMut<SandboxGui>,
+) {
+    egui::SidePanel::left("settings").show(egui_contexts.ctx_mut(), |ui| {
+        let (entity, sandbox) = sandbox.single_mut();
+        let mut new_sandbox_size = None;
+
+        ui.label("New sandbox:");
+        if ui.button("Tiny (64x64)").clicked() {
+            new_sandbox_size = Some((64, 64));
+        }
+        if ui.button("Small (128x128)").clicked() {
+            new_sandbox_size = Some((128, 128));
+        }
+        if ui.button("Normal (256x256)").clicked() {
+            new_sandbox_size = Some((256, 256));
+        }
+        if ui.button("Large (512x512)").clicked() {
+            new_sandbox_size = Some((512, 512));
+        }
+        if ui.button("Huge (1024x1024)").clicked() {
+            new_sandbox_size = Some((1024, 1024));
+        }
+
+        if let Some((width, height)) = new_sandbox_size {
+            commands.entity(entity).despawn();
+            spawn_sandbox(
+                commands,
+                images.as_mut(),
+                width,
+                height,
+            );
+            gui.mode = GuiMode::MainGui;
+        }
+        ui.separator();
+        ui.label(format!(
+            "Simulation: {} ms",
+            simulation.frame_time_ms
+        ));
+        ui.label(format!(
+            "Rendering: {} ms",
+            sandbox.render_time_ms
+        ));
+        ui.separator();
+        ui.hyperlink_to("Made by Bas@Fantastimaker", "https://fantastimaker.nl");
+    });
+}
+
+fn bottom_toolbar(
+    egui_contexts: &mut EguiContexts,
+    gui: &mut ResMut<SandboxGui>,
+    toolbox: &mut ResMut<ToolBox>,
+) {
+    egui::TopBottomPanel::bottom("bottom_panel")
+        .frame(Frame::none())
+        .show_separator_line(false)
+        .resizable(false)
+        .show(egui_contexts.ctx_mut(), |ui| {
+            ui.horizontal(|ui| {
+                let eraser_button = egui::widgets::ImageButton::new(
+                    &gui.icon_eraser_handle,
+                )
+                    .frame(false);
+                let eraser_button = if toolbox.element == Element::Air {
+                    eraser_button.tint(Color32::LIGHT_GREEN)
+                } else {
+                    eraser_button
+                };
+                if ui.add(eraser_button).clicked() {
+                    if toolbox.element == Element::Air {
+                        toolbox.element = gui.last_element;
+                    } else {
+                        toolbox.element = Element::Air;
+                    }
+                };
+
+                if element_button(ui, gui, toolbox.element).clicked() {
+                    if gui.mode == GuiMode::ElementSelect {
+                        gui.mode = GuiMode::MainGui;
+                    } else {
+                        gui.mode = GuiMode::ElementSelect;
+                    }
+                };
+
+                let tool_button = egui::widgets::ImageButton::new(
+                    match toolbox.tool {
+                        Tool::Pixel => &gui.icon_pencil_handle,
+                        Tool::Circle => &gui.icon_circle_handle,
+                        Tool::Square => &gui.icon_square_handle,
+                        Tool::Spray => &gui.icon_spray_handle,
+                        Tool::Fill => &gui.icon_bucket_handle,
+                    },
+                )
+                    .frame(false);
+                let tool_button = if gui.mode == GuiMode::ToolSelect {
+                    tool_button.tint(Color32::LIGHT_GREEN)
+                } else {
+                    tool_button
+                };
+                if ui.add(tool_button).clicked() {
+                    if gui.mode == GuiMode::ToolSelect {
+                        gui.mode = GuiMode::MainGui;
+                    } else {
+                        gui.mode = GuiMode::ToolSelect;
+                    }
+                };
+            });
+        });
+}
+
+fn right_side_toolbar(
+    egui_contexts: &mut EguiContexts,
+    gui: &mut ResMut<SandboxGui>,
+    simulation: &mut ResMut<Simulation>,
+    transform: &mut Transform,
+) {
+    egui::SidePanel::right("right_panel")
+        .frame(Frame::none())
+        .show_separator_line(false)
+        .resizable(false)
+        .min_width(ICON_SIZE)
+        .show(egui_contexts.ctx_mut(), |ui| {
+            let settings_button =
+                egui::widgets::ImageButton::new(&gui.icon_settings_handle)
+                    .frame(false);
+            let settings_button = if gui.mode == GuiMode::SandboxSettings {
+                settings_button.tint(Color32::LIGHT_GREEN)
+            } else {
+                settings_button
+            };
+            if ui.add(settings_button).clicked() {
+                gui.mode = if gui.mode == GuiMode::SandboxSettings {
+                    GuiMode::MainGui
+                } else {
+                    GuiMode::SandboxSettings
+                }
+            };
+            if ui
+                .add(
+                    egui::widgets::ImageButton::new(
+                        if simulation.running {
+                            &gui.icon_play_handle
+                        } else {
+                            &gui.icon_pause_handle
+                        },
+                    )
+                        .frame(false),
+                )
+                .clicked()
+            {
+                simulation.running = !simulation.running;
+            };
+            if !simulation.running {
+                if ui
+                    .add(
+                        egui::widgets::ImageButton::new(
+                            &gui.icon_step_handle,
+                        )
+                            .frame(false),
+                    )
+                    .clicked()
+                {
+                    simulation.step = true;
+                };
+            }
+
+            if ui
+                .add(
+                    egui::widgets::ImageButton::new(
+                        &gui.icon_zoom_in_handle,
+                    )
+                        .frame(false),
+                )
+                .clicked()
+            {
+                transform.scale.x = (transform.scale.x * 0.9).clamp(0.1, 1.0);
+                transform.scale.y = (transform.scale.y * 0.9).clamp(0.1, 1.0);
+            };
+            if ui
+                .add(
+                    egui::widgets::ImageButton::new(
+                        &gui.icon_zoom_out_handle,
+                    )
+                        .frame(false),
+                )
+                .clicked()
+            {
+                transform.scale.x = (transform.scale.x * 1.1).clamp(0.1, 1.0);
+                transform.scale.y = (transform.scale.y * 1.1).clamp(0.1, 1.0);
+            };
+            let move_button =
+                egui::widgets::ImageButton::new(&gui.icon_move_handle)
+                    .frame(false);
+            let move_button = if gui.mode == GuiMode::MoveView {
+                move_button.tint(Color32::LIGHT_GREEN)
+            } else {
+                move_button
+            };
+            if ui.add(move_button).clicked() {
+                gui.mode = if gui.mode == GuiMode::MoveView {
+                    GuiMode::MainGui
+                } else {
+                    GuiMode::MoveView
+                }
+            };
+        });
 }
 
 fn add_icon(egui_contexts: &mut EguiContexts, name: &str, image_data: &[u8]) -> TextureHandle {
@@ -616,17 +588,18 @@ fn element_button(ui: &mut Ui, gui: &mut SandboxGui, element: Element) -> Respon
         );
         ui.painter().add(Shape::mesh(mesh));
         // Element name (with simple shadow)
+        let name = element_name(element).replace(" ", "\n");
         ui.painter().text(
             rect.left_top() + Vec2::new(11.0, 16.0),
             Align2::LEFT_TOP,
-            gui.element_names.get(&element).unwrap().replace(" ", "\n"),
+            &name,
             FontId::proportional(14.0),
             Color32::BLACK,
         );
         ui.painter().text(
             rect.left_top() + Vec2::new(10.0, 15.0),
             Align2::LEFT_TOP,
-            gui.element_names.get(&element).unwrap().replace(" ", "\n"),
+            &name,
             FontId::proportional(14.0),
             Color32::WHITE,
         );

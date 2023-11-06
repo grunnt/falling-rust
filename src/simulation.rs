@@ -1,8 +1,9 @@
+use bevy::prelude::*;
+use bevy::utils::Instant;
+
 use crate::element::*;
 use crate::pseudo_random::PseudoRandom;
 use crate::sandbox::*;
-use bevy::prelude::*;
-use bevy::utils::Instant;
 
 #[derive(Clone, Resource)]
 pub struct Simulation {
@@ -41,7 +42,7 @@ pub fn simulation_system(mut sandbox: Query<&mut SandBox>, mut simulation: ResMu
     }
 }
 
-pub fn simulation_step(mut simulation: &mut Simulation, sandbox: &mut SandBox) {
+pub fn simulation_step(simulation: &mut Simulation, sandbox: &mut SandBox) {
     let start = Instant::now();
     if simulation.running || simulation.step {
         simulation.step = false;
@@ -125,18 +126,18 @@ fn update_cell(x: usize, y: usize, sandbox: &mut SandBox, random: u32) {
 
 fn handle_igniting_cell(x: usize, y: usize, sandbox: &mut SandBox, random: u32) {
     for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
-        let neighbour_cell = sandbox.get(nx, ny);
-        let neighbour_type = element_type(neighbour_cell.element);
-        if neighbour_cell.element == Element::TNT {
+        let neighbor_cell = sandbox.get(nx, ny);
+        let neighbor_type = element_type(neighbor_cell.element);
+        if neighbor_cell.element == Element::TNT {
             sandbox.set_element_with_strength(
                 nx,
                 ny,
                 Element::Explosion,
-                neighbour_cell.strength,
+                neighbor_cell.strength,
                 random,
             );
-        } else if neighbour_type.has_flag(FLAG_BURNS) {
-            if neighbour_type.has_flag(FLAG_TURNS_INTO_ASH) && once_per(random, 3) {
+        } else if neighbor_type.has_flag(FLAG_BURNS) {
+            if neighbor_type.has_flag(FLAG_TURNS_INTO_ASH) && once_per(random, 3) {
                 sandbox.get_mut(nx, ny).dissolve_to(Element::Ash);
             } else {
                 sandbox.get_mut(nx, ny).dissolve_to(Element::Fire);
@@ -147,10 +148,10 @@ fn handle_igniting_cell(x: usize, y: usize, sandbox: &mut SandBox, random: u32) 
 
 fn handle_acidic_cell(x: usize, y: usize, sandbox: &mut SandBox, random: u32) {
     for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
-        let neighbour_cell = sandbox.get_mut(nx, ny);
-        let neighbour_type = element_type(neighbour_cell.element);
-        if neighbour_type.has_flag(FLAG_DISSOLVES_IN_ACID)
-            && once_per(random, (neighbour_cell.strength / 2).max(2) as u32)
+        let neighbor_cell = sandbox.get_mut(nx, ny);
+        let neighbor_type = element_type(neighbor_cell.element);
+        if neighbor_type.has_flag(FLAG_DISSOLVES_IN_ACID)
+            && once_per(random, (neighbor_cell.strength / 2).max(2) as u32)
         {
             if sandbox.get_mut(nx, ny).dissolve_to(Element::Air) {
                 if once_per(random, 2) {
@@ -173,19 +174,19 @@ fn handle_powder_form(sandbox: &mut SandBox, x: usize, y: usize, random: u32) ->
         return true;
     }
     // Can we slide off diagonally?
-    let neighbour_x = random_neighbour_x(x, random);
-    let neighbour_element = sandbox.get(neighbour_x, y + 1).element;
-    let neighbour_type = element_type(neighbour_element);
-    if neighbour_type.form == ElementForm::Liquid || neighbour_type.form == ElementForm::Gas {
-        sandbox.swap(x, y, neighbour_x, y + 1);
+    let neighbor_x = random_neighbor_x(x, random);
+    let neighbor_element = sandbox.get(neighbor_x, y + 1).element;
+    let neighbor_type = element_type(neighbor_element);
+    if neighbor_type.form == ElementForm::Liquid || neighbor_type.form == ElementForm::Gas {
+        sandbox.swap(x, y, neighbor_x, y + 1);
         return true;
     }
     // Can we slide of diagonally the other way?
-    let neighbour_x = random_other_neighbour_x(x, random);
-    let neighbour_element = sandbox.get(neighbour_x, y + 1).element;
-    let neighbour_type = element_type(neighbour_element);
-    if neighbour_type.form == ElementForm::Liquid || neighbour_type.form == ElementForm::Gas {
-        sandbox.swap(x, y, neighbour_x, y + 1);
+    let neighbor_x = random_other_neighbor_x(x, random);
+    let neighbor_element = sandbox.get(neighbor_x, y + 1).element;
+    let neighbor_type = element_type(neighbor_element);
+    if neighbor_type.form == ElementForm::Liquid || neighbor_type.form == ElementForm::Gas {
+        sandbox.swap(x, y, neighbor_x, y + 1);
         return true;
     }
     false
@@ -234,19 +235,19 @@ fn handle_liquid_form(sandbox: &mut SandBox, x: usize, y: usize, random: u32) ->
             }
         };
         if let Some(check_x) = check_x_opt {
-            let neighbour = sandbox.get(check_x, y);
-            let neighbour_element_type = element_type(neighbour.element);
-            if neighbour_element_type.form == ElementForm::Gas
-                || (neighbour_element_type.form == ElementForm::Liquid
-                    && neighbour.element != cell.element
-                    && neighbour_element_type.weight < cell_element_type.weight
+            let neighbor = sandbox.get(check_x, y);
+            let neighbor_element_type = element_type(neighbor.element);
+            if neighbor_element_type.form == ElementForm::Gas
+                || (neighbor_element_type.form == ElementForm::Liquid
+                    && neighbor.element != cell.element
+                    && neighbor_element_type.weight < cell_element_type.weight
                     && once_per(random, 3))
             {
                 // Slide sideways
                 sandbox.swap(x, y, check_x, y);
                 return true;
             }
-            if neighbour.element != cell.element {
+            if neighbor.element != cell.element {
                 break;
             }
         } else {
@@ -267,11 +268,11 @@ fn handle_gas_form(sandbox: &mut SandBox, x: usize, y: usize, random: u32) -> bo
         1 => (x - 1, y),
         _ => (x, y - 1),
     };
-    let neighbour_element = sandbox.get(nx, ny).element;
-    let neighbour_element_type = element_type(neighbour_element);
-    if neighbour_element_type.form == ElementForm::Gas
-        && cell.element != neighbour_element
-        && neighbour_element_type.weight > cell_element_type.weight
+    let neighbor_element = sandbox.get(nx, ny).element;
+    let neighbor_element_type = element_type(neighbor_element);
+    if neighbor_element_type.form == ElementForm::Gas
+        && cell.element != neighbor_element
+        && neighbor_element_type.weight > cell_element_type.weight
         && (cell.element == Element::Air || once_per(random, 2))
     {
         sandbox.swap(x, y, nx, ny);
@@ -301,8 +302,8 @@ fn update_water(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool 
         2 => (x, y - 1),
         _ => (x, y + 1),
     };
-    let neighbour_element = sandbox.get(nx, ny).element;
-    match neighbour_element {
+    let neighbor_element = sandbox.get(nx, ny).element;
+    match neighbor_element {
         Element::Acid => {
             sandbox.get_mut(nx, ny).dissolve_to(Element::Water);
             return false;
@@ -383,15 +384,15 @@ fn update_smoke(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool 
 }
 
 fn update_iron(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
-    let mut rusty_neighbour = false;
+    let mut rusty_neighbor = false;
     for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
         let element = sandbox.get(nx, ny).element;
         if element_type(element).has_flag(FLAG_CAUSES_RUST) {
-            rusty_neighbour = true;
+            rusty_neighbor = true;
             break;
         }
     }
-    if rusty_neighbour {
+    if rusty_neighbor {
         // Rust iron by reducing its strength somewhat randomly
         if once_per(random, 3) && !sandbox.reduce_strength(x, y, 1) {
             // Turn into rust
@@ -407,11 +408,11 @@ fn update_seed(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
     let mut nutrition = false;
     let mut water = false;
     for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
-        let neighbour_element = sandbox.get(nx, ny).element;
-        if !nutrition && element_type(neighbour_element).has_flag(FLAG_NUTRITIOUS) {
+        let neighbor_element = sandbox.get(nx, ny).element;
+        if !nutrition && element_type(neighbor_element).has_flag(FLAG_NUTRITIOUS) {
             nutrition = true;
         }
-        if !water && element_type(neighbour_element).has_flag(FLAG_WET) {
+        if !water && element_type(neighbor_element).has_flag(FLAG_WET) {
             water = true;
         }
     }
@@ -449,9 +450,9 @@ fn update_plant(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool 
     if cell_variant == element_type(Element::Seed).strength {
         // Root cell
         for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
-            let neighbour = sandbox.get(nx, ny);
-            if neighbour.element != Element::Plant
-                && element_type(neighbour.element).has_flag(FLAG_NUTRITIOUS)
+            let neighbor = sandbox.get(nx, ny);
+            if neighbor.element != Element::Plant
+                && element_type(neighbor.element).has_flag(FLAG_NUTRITIOUS)
             {
                 attached = true;
                 break;
@@ -459,8 +460,8 @@ fn update_plant(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool 
         }
     } else {
         for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
-            let neighbour = sandbox.get(nx, ny);
-            if neighbour.element == Element::Plant && neighbour.variant > cell_variant {
+            let neighbor = sandbox.get(nx, ny);
+            if neighbor.element == Element::Plant && neighbor.variant > cell_variant {
                 attached = true;
                 break;
             }
@@ -509,17 +510,17 @@ fn update_explosion(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> b
     }
     // Spread explosion
     let strength = sandbox.get(x, y).strength;
-    let neighbours = match random % 2 {
+    let neighbors = match random % 2 {
         0 => [(x - 1, y), (x + 1, y)],
         _ => [(x, y - 1), (x, y + 1)],
     };
-    for (nx, ny) in neighbours {
-        let neighbour = sandbox.get_mut(nx, ny);
-        if neighbour.element == Element::TNT {
-            let explosion_strength = if neighbour.strength + strength < 255 {
-                neighbour.strength + strength
+    for (nx, ny) in neighbors {
+        let neighbor = sandbox.get_mut(nx, ny);
+        if neighbor.element == Element::TNT {
+            let explosion_strength = if neighbor.strength + strength < 255 {
+                neighbor.strength + strength
             } else {
-                neighbour.strength
+                neighbor.strength
             };
             sandbox.set_element_with_strength(
                 nx,
@@ -528,19 +529,19 @@ fn update_explosion(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> b
                 explosion_strength,
                 random,
             );
-        } else if neighbour.element != Element::Explosion {
-            let neighbour_type = element_type(neighbour.element);
-            let neighbour_strength = if neighbour_type.has_flag(FLAG_BLAST_RESISTANT) {
-                neighbour.strength
+        } else if neighbor.element != Element::Explosion {
+            let neighbor_type = element_type(neighbor.element);
+            let neighbor_strength = if neighbor_type.has_flag(FLAG_BLAST_RESISTANT) {
+                neighbor.strength
             } else {
                 0
             };
-            if neighbour_strength < strength {
+            if neighbor_strength < strength {
                 sandbox.set_element_with_strength(
                     nx,
                     ny,
                     Element::Explosion,
-                    strength - neighbour_strength,
+                    strength - neighbor_strength,
                     random,
                 );
             }
@@ -550,32 +551,32 @@ fn update_explosion(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> b
 }
 
 fn update_air(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
-    let mut living_neighbours = 0;
+    let mut living_neighbors = 0;
     if sandbox.get(x - 1, y - 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x, y - 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x + 1, y - 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x - 1, y).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x + 1, y).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x - 1, y + 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x, y + 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x + 1, y + 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
-    if living_neighbours == 3 {
+    if living_neighbors == 3 {
         sandbox.set_element(x, y, Element::Life, random);
         return true;
     }
@@ -583,32 +584,32 @@ fn update_air(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
 }
 
 fn update_life(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
-    let mut living_neighbours = 0;
+    let mut living_neighbors = 0;
     if sandbox.get(x - 1, y - 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x, y - 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x + 1, y - 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x - 1, y).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x + 1, y).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x - 1, y + 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x, y + 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
     if sandbox.get(x + 1, y + 1).element == Element::Life {
-        living_neighbours += 1;
+        living_neighbors += 1;
     }
-    if living_neighbours < 2 || living_neighbours > 3 {
+    if living_neighbors < 2 || living_neighbors > 3 {
         sandbox.set_element(x, y, Element::Air, random);
         return true;
     }
@@ -616,7 +617,7 @@ fn update_life(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
     false
 }
 
-pub fn random_neighbour_x(x: usize, random: u32) -> usize {
+pub fn random_neighbor_x(x: usize, random: u32) -> usize {
     if random % 2 == 0 {
         x + 1
     } else {
@@ -624,7 +625,7 @@ pub fn random_neighbour_x(x: usize, random: u32) -> usize {
     }
 }
 
-pub fn random_other_neighbour_x(x: usize, random: u32) -> usize {
+pub fn random_other_neighbor_x(x: usize, random: u32) -> usize {
     if random % 2 == 0 {
         x - 1
     } else {

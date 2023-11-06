@@ -1,7 +1,8 @@
 use std::fmt;
 
-use crate::{element::Element, pseudo_random::PseudoRandom, sandbox::SandBox};
 use bevy::prelude::Resource;
+
+use crate::{element::Element, pseudo_random::PseudoRandom, sandbox::SandBox};
 
 // Tools for editing the world
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -90,9 +91,9 @@ impl ToolBox {
                 while !checklist.is_empty() {
                     let (x, y) = checklist.pop().unwrap();
                     for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
-                        let neighbour_element = sandbox.get(nx, ny).element;
-                        if neighbour_element == element_to_replace
-                            && neighbour_element != Element::Indestructible
+                        let neighbor_element = sandbox.get(nx, ny).element;
+                        if neighbor_element == element_to_replace
+                            && neighbor_element != Element::Indestructible
                         {
                             sandbox.set_element(nx, ny, self.element, self.random.next());
                             checklist.push((nx, ny));
