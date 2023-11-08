@@ -12,7 +12,7 @@ A release version for Windows is available at [GitHub releases](https://github.c
 
 You will need to have [Rust](https://www.rust-lang.org) installed to compile this. 
 
-The simulation is quite CPU intensive, so make sure to run this in release mode:
+The simulation is quite CPU intensive, so you may want to run this in release mode:
 
 ```
 cargo run --release
