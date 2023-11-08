@@ -1,5 +1,5 @@
 // Hide console on Windows. Remove to get console logging and backtraces.
-// #![windows_subsystem = "windows"]
+#![windows_subsystem = "windows"]
 
 use bevy::{prelude::*, window::WindowResolution};
 
