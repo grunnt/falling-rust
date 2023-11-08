@@ -3,7 +3,11 @@ use bevy::{
     render::render_resource::{Extent3d, TextureDimension, TextureFormat},
 };
 
-use crate::{cell::*, element::*};
+mod cell;
+mod element;
+
+pub use cell::*;
+pub use element::*;
 
 // The sandbox consisting of a grid of cells with elements that is simulated
 #[derive(Component)]
@@ -20,12 +24,12 @@ impl SandBox {
         let mut sandbox = SandBox::empty(width, height);
         // Set indestructible pixels at the border to ease computations
         for x in 0..sandbox.width() {
-            sandbox.set_element(x, 0, Element::Indestructible, 0);
-            sandbox.set_element(x, sandbox.height() - 1, Element::Indestructible, 0);
+            sandbox.set_element(x, 0, Element::Indestructible);
+            sandbox.set_element(x, sandbox.height() - 1, Element::Indestructible);
         }
         for y in 0..sandbox.height() {
-            sandbox.set_element(0, y, Element::Indestructible, 0);
-            sandbox.set_element(sandbox.width() - 1, y, Element::Indestructible, 0);
+            sandbox.set_element(0, y, Element::Indestructible);
+            sandbox.set_element(sandbox.width() - 1, y, Element::Indestructible);
         }
         sandbox
     }
@@ -74,7 +78,7 @@ impl SandBox {
     }
 
     pub fn clear_cell(&mut self, x: usize, y: usize) {
-        self.set_element(x, y, Element::Air, 0);
+        self.set_element(x, y, Element::Air);
     }
 
     pub fn set_element_with_strength(
@@ -83,7 +87,6 @@ impl SandBox {
         y: usize,
         element: Element,
         strength: u8,
-        random: u32,
     ) {
         let index = self.index(x, y);
         let cell = &mut self.cells[index];
@@ -94,14 +97,10 @@ impl SandBox {
         cell.element = element;
         cell.visited = self.visited_state;
         cell.strength = strength;
-        let render = element_type(element).render;
-        if render == RenderMethod::VariantLinear || render == RenderMethod::Flicker {
-            cell.variant = random as u8;
-        }
     }
 
-    pub fn set_element(&mut self, x: usize, y: usize, element: Element, random: u32) {
-        self.set_element_with_strength(x, y, element, element_type(element).strength, random);
+    pub fn set_element(&mut self, x: usize, y: usize, element: Element) {
+        self.set_element_with_strength(x, y, element, element_type(element).strength);
     }
 
     pub fn swap(&mut self, x: usize, y: usize, x2: usize, y2: usize) {
@@ -140,17 +139,6 @@ impl SandBox {
 
     pub fn is_visited_state(&self) -> bool {
         self.visited_state
-    }
-
-    pub fn clear(&mut self) {
-        for y in 1..self.height - 1 {
-            for x in 1..self.width - 1 {
-                let index = self.index(x, y);
-                let cell = &mut self.cells[index];
-                cell.element = Element::Air;
-                cell.visited = self.visited_state;
-            }
-        }
     }
 
     #[inline(always)]

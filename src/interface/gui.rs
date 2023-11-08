@@ -7,14 +7,12 @@ use egui::{Align2, FontId, Mesh, Pos2, Rect, Shape, Vec2};
 use image::{DynamicImage, GenericImageView};
 
 use crate::{
-    element::*,
-    pseudo_random::PseudoRandom,
-    render::cell_color,
-    sandbox::SandBox,
-    simulation::Simulation,
+    sandbox::*,
+    simulation::*,
     spawn_sandbox,
-    toolbox::{Tool, ToolBox},
 };
+use crate::interface::toolbox::*;
+use crate::sandbox::ELEMENT_COUNT;
 
 const ICON_SIZE: f32 = 64.0;
 
@@ -23,8 +21,8 @@ pub struct GuiPlugin;
 impl Plugin for GuiPlugin {
     fn build(&self, app: &mut App) {
         app.add_plugins(EguiPlugin)
-             .add_systems(Startup, setup_gui)
-             .add_systems(Update, gui_system);
+            .add_systems(Startup, setup_gui)
+            .add_systems(Update, gui_system);
     }
 }
 
@@ -69,7 +67,7 @@ fn setup_gui(mut commands: Commands, mut egui_contexts: EguiContexts) {
     egui_contexts.ctx_mut().set_style(style);
 
     // Generate element icons
-    let background = image::load_from_memory(include_bytes!("../assets/icon_element.png")).unwrap();
+    let background = image::load_from_memory(include_bytes!("../../assets/icon_element.png")).unwrap();
     let element_icons = [
         generate_element_image(Element::Air, &mut egui_contexts, &background),
         generate_element_image(Element::Sand, &mut egui_contexts, &background),
@@ -89,6 +87,7 @@ fn setup_gui(mut commands: Commands, mut egui_contexts: EguiContexts) {
         generate_element_image(Element::Seed, &mut egui_contexts, &background),
         generate_element_image(Element::Plant, &mut egui_contexts, &background),
         generate_element_image(Element::TNT, &mut egui_contexts, &background),
+        generate_element_image(Element::Gunpowder, &mut egui_contexts, &background),
         generate_element_image(Element::Fuse, &mut egui_contexts, &background),
         generate_element_image(Element::Explosion, &mut egui_contexts, &background),
         generate_element_image(Element::WaterSource, &mut egui_contexts, &background),
@@ -105,72 +104,72 @@ fn setup_gui(mut commands: Commands, mut egui_contexts: EguiContexts) {
         bucket_icon_handle: add_icon(
             &mut egui_contexts,
             "icon_bucket",
-            include_bytes!("../assets/icon_bucket.png"),
+            include_bytes!("../../assets/icon_bucket.png"),
         ),
         icon_circle_handle: add_icon(
             &mut egui_contexts,
             "icon_circle",
-            include_bytes!("../assets/icon_circle.png"),
+            include_bytes!("../../assets/icon_circle.png"),
         ),
         icon_square_handle: add_icon(
             &mut egui_contexts,
             "icon_square",
-            include_bytes!("../assets/icon_square.png"),
+            include_bytes!("../../assets/icon_square.png"),
         ),
         icon_pencil_handle: add_icon(
             &mut egui_contexts,
             "icon_pencil",
-            include_bytes!("../assets/icon_pencil.png"),
+            include_bytes!("../../assets/icon_pencil.png"),
         ),
         icon_spray_handle: add_icon(
             &mut egui_contexts,
             "icon_spray",
-            include_bytes!("../assets/icon_spray.png"),
+            include_bytes!("../../assets/icon_spray.png"),
         ),
         icon_bucket_handle: add_icon(
             &mut egui_contexts,
             "icon_bucket",
-            include_bytes!("../assets/icon_bucket.png"),
+            include_bytes!("../../assets/icon_bucket.png"),
         ),
         icon_play_handle: add_icon(
             &mut egui_contexts,
             "icon_play",
-            include_bytes!("../assets/icon_play.png"),
+            include_bytes!("../../assets/icon_play.png"),
         ),
         icon_pause_handle: add_icon(
             &mut egui_contexts,
             "icon_pause",
-            include_bytes!("../assets/icon_pause.png"),
+            include_bytes!("../../assets/icon_pause.png"),
         ),
         icon_zoom_in_handle: add_icon(
             &mut egui_contexts,
             "icon_zoom_in",
-            include_bytes!("../assets/icon_zoom_in.png"),
+            include_bytes!("../../assets/icon_zoom_in.png"),
         ),
         icon_zoom_out_handle: add_icon(
             &mut egui_contexts,
             "icon_zoom_out",
-            include_bytes!("../assets/icon_zoom_out.png"),
+            include_bytes!("../../assets/icon_zoom_out.png"),
         ),
         icon_move_handle: add_icon(
             &mut egui_contexts,
             "icon_move",
-            include_bytes!("../assets/icon_move.png"),
+            include_bytes!("../../assets/icon_move.png"),
         ),
         icon_settings_handle: add_icon(
             &mut egui_contexts,
             "icon_settings",
-            include_bytes!("../assets/icon_settings.png"),
+            include_bytes!("../../assets/icon_settings.png"),
         ),
         icon_eraser_handle: add_icon(
             &mut egui_contexts,
             "icon_eraser",
-            include_bytes!("../assets/icon_eraser.png"),
+            include_bytes!("../../assets/icon_eraser.png"),
         ),
         icon_step_handle: add_icon(
             &mut egui_contexts,
             "icon_step",
-            include_bytes!("../assets/icon_step.png"),
+            include_bytes!("../../assets/icon_step.png"),
         ),
         element_icons,
     });
@@ -324,6 +323,7 @@ fn element_select_panel(
                     element_button_click(ui, gui, Element::Life, toolbox);
                     element_button_click(ui, gui, Element::Seed, toolbox);
                     element_button_click(ui, gui, Element::TNT, toolbox);
+                    element_button_click(ui, gui, Element::Gunpowder, toolbox);
                     element_button_click(ui, gui, Element::Fuse, toolbox);
                     element_button_click(ui, gui, Element::WaterSource, toolbox);
                     element_button_click(ui, gui, Element::AcidSource, toolbox);
@@ -386,6 +386,7 @@ fn settings_panel(
         ));
         ui.separator();
         ui.hyperlink_to("Made by Bas@Fantastimaker", "https://fantastimaker.nl");
+        ui.hyperlink_to("Using Bevy", "https://bevyengine.org");
     });
 }
 
@@ -588,7 +589,7 @@ fn element_button(ui: &mut Ui, gui: &mut SandboxGui, element: Element) -> Respon
         );
         ui.painter().add(Shape::mesh(mesh));
         // Element name (with simple shadow)
-        let name = element_name(element).replace(" ", "\n");
+        let name = element.to_string().replace(" ", "\n");
         ui.painter().text(
             rect.left_top() + Vec2::new(11.0, 16.0),
             Align2::LEFT_TOP,
@@ -624,7 +625,6 @@ pub fn generate_element_image(
     toolbox.apply(&mut sandbox, size / 2, size / 2);
 
     let mut img = ColorImage::new([size, size], Color32::TRANSPARENT);
-    let mut random = PseudoRandom::new();
 
     for y in 0..size {
         for x in 0..size {
@@ -634,7 +634,7 @@ pub fn generate_element_image(
 
             // Get the element color
             let cell = sandbox.get_mut(x, y);
-            let (cr, cg, cb) = cell_color(cell, &mut random);
+            let (cr, cg, cb) = element_type(cell.element).color;
 
             // Do a simplified alpha blend between the two to soften the edges
             let dx = (center - x as isize).abs() as f32;

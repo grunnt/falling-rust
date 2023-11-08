@@ -2,7 +2,7 @@ use std::fmt;
 
 use bevy::prelude::Resource;
 
-use crate::{element::Element, pseudo_random::PseudoRandom, sandbox::SandBox};
+use crate::{pseudo_random::PseudoRandom, sandbox::*};
 
 // Tools for editing the world
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
@@ -44,7 +44,7 @@ impl ToolBox {
         };
         match self.tool {
             Tool::Pixel => {
-                sandbox.set_element(x, y, self.element, self.random.next());
+                sandbox.set_element(x, y, self.element);
             }
             Tool::Circle => {
                 let radius_sq = (half_size * half_size) as isize;
@@ -53,7 +53,7 @@ impl ToolBox {
                         let dx = (cx as isize - x as isize).abs();
                         let dy = (cy as isize - y as isize).abs();
                         if dx * dx + dy * dy <= radius_sq {
-                            sandbox.set_element(cx, cy, self.element, self.random.next());
+                            sandbox.set_element(cx, cy, self.element);
                         }
                     }
                 }
@@ -61,7 +61,7 @@ impl ToolBox {
             Tool::Square => {
                 for cy in y1..y2 {
                     for cx in x1..x2 {
-                        sandbox.set_element(cx, cy, self.element, self.random.next());
+                        sandbox.set_element(cx, cy, self.element);
                     }
                 }
             }
@@ -74,7 +74,7 @@ impl ToolBox {
                     let dx = (cx as isize - x as isize).abs();
                     let dy = (cy as isize - y as isize).abs();
                     if dx * dx + dy * dy <= radius_sq {
-                        sandbox.set_element(cx, cy, self.element, self.random.next());
+                        sandbox.set_element(cx, cy, self.element);
                     }
                 }
             }
@@ -86,7 +86,7 @@ impl ToolBox {
                 {
                     return;
                 }
-                sandbox.set_element(x, y, self.element, self.random.next());
+                sandbox.set_element(x, y, self.element);
                 checklist.push((x, y));
                 while !checklist.is_empty() {
                     let (x, y) = checklist.pop().unwrap();
@@ -95,7 +95,7 @@ impl ToolBox {
                         if neighbor_element == element_to_replace
                             && neighbor_element != Element::Indestructible
                         {
-                            sandbox.set_element(nx, ny, self.element, self.random.next());
+                            sandbox.set_element(nx, ny, self.element);
                             checklist.push((nx, ny));
                         }
                     }

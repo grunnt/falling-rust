@@ -1,16 +1,10 @@
 use bevy::{prelude::*, window::WindowResolution};
 
-/// Plugin that matches the application window to fill the browser window.
-/// Does nothing if not run in a browser (wasm).
+/// Plugin that matches the application window to fill the browser window. Only useable for wasm targets.
 pub struct FillBrowserWindowPlugin;
 
 impl Plugin for FillBrowserWindowPlugin {
-    #[allow(unreachable_code, unused_variables)]
     fn build(&self, app: &mut App) {
-        #[cfg(not(target_family = "wasm"))]
-        {
-            return;
-        }
         app.add_systems(Update, browser_filler);
     }
 }

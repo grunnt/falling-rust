@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy::utils::Instant;
 
-use crate::element::*;
 use crate::pseudo_random::PseudoRandom;
 use crate::sandbox::*;
 
@@ -84,23 +83,24 @@ fn update_cell(x: usize, y: usize, sandbox: &mut SandBox, random: u32) {
     }
 
     if cell_type.has_flag(FLAG_IS_SOURCE) {
-        handle_source_cell(x, y, sandbox, cell_type, random);
+        handle_source_cell(x, y, sandbox, cell_type);
     }
 
     // Element-specific handling
     let mut marked_as_visited = match cell.element {
-        Element::Air => update_air(x, y, sandbox, random),
+        Element::Air => update_air(x, y, sandbox),
         Element::Water => update_water(x, y, sandbox, random),
         Element::Drain => update_drain(x, y, sandbox, random),
         Element::Fire => update_fire(x, y, sandbox, random),
         Element::Ash => update_ash(x, y, sandbox, random),
         Element::Lava => update_lava(x, y, sandbox, random),
         Element::Smoke => update_smoke(x, y, sandbox, random),
-        Element::Life => update_life(x, y, sandbox, random),
+        Element::Life => update_life(x, y, sandbox),
         Element::Iron => update_iron(x, y, sandbox, random),
         Element::Plant => update_plant(x, y, sandbox, random),
-        Element::Seed => update_seed(x, y, sandbox, random),
-        Element::TNT => update_tnt(x, y, sandbox, random),
+        Element::Seed => update_seed(x, y, sandbox),
+        Element::TNT => update_explosive(Element::TNT, x, y, sandbox),
+        Element::Gunpowder => update_explosive(Element::Gunpowder, x, y, sandbox),
         Element::Explosion => update_explosion(x, y, sandbox, random),
         _ => false,
     };
@@ -128,13 +128,12 @@ fn handle_igniting_cell(x: usize, y: usize, sandbox: &mut SandBox, random: u32) 
     for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
         let neighbor_cell = sandbox.get(nx, ny);
         let neighbor_type = element_type(neighbor_cell.element);
-        if neighbor_cell.element == Element::TNT {
+        if neighbor_cell.element == Element::TNT || neighbor_cell.element == Element::Gunpowder {
             sandbox.set_element_with_strength(
                 nx,
                 ny,
                 Element::Explosion,
                 neighbor_cell.strength,
-                random,
             );
         } else if neighbor_type.has_flag(FLAG_BURNS) {
             if neighbor_type.has_flag(FLAG_TURNS_INTO_ASH) && once_per(random, 3) {
@@ -155,7 +154,7 @@ fn handle_acidic_cell(x: usize, y: usize, sandbox: &mut SandBox, random: u32) {
         {
             if sandbox.get_mut(nx, ny).dissolve_to(Element::Air) {
                 if once_per(random, 2) {
-                    sandbox.set_element(x, y, Element::Smoke, random);
+                    sandbox.set_element(x, y, Element::Smoke);
                 } else {
                     sandbox.clear_cell(x, y);
                 }
@@ -165,7 +164,7 @@ fn handle_acidic_cell(x: usize, y: usize, sandbox: &mut SandBox, random: u32) {
 }
 
 fn handle_powder_form(sandbox: &mut SandBox, x: usize, y: usize, random: u32) -> bool {
-    // Can we fall straignt down?
+    // Can we fall down?
     let below_element = sandbox.get(x, y + 1).element;
     let below_element_type = element_type(below_element);
     if below_element_type.form == ElementForm::Liquid || below_element_type.form == ElementForm::Gas
@@ -210,9 +209,9 @@ fn handle_liquid_form(sandbox: &mut SandBox, x: usize, y: usize, random: u32) ->
     let below_element_type = element_type(below_element);
     if below_element_type.form == ElementForm::Gas
         || (below_element_type.form == ElementForm::Liquid
-            && below_element != cell.element
-            && below_element_type.weight < cell_element_type.weight
-            && once_per(random, 3))
+        && below_element != cell.element
+        && below_element_type.weight < cell_element_type.weight
+        && once_per(random, 3))
     {
         sandbox.swap(x, y, check_x, y + 1);
         return true;
@@ -239,9 +238,9 @@ fn handle_liquid_form(sandbox: &mut SandBox, x: usize, y: usize, random: u32) ->
             let neighbor_element_type = element_type(neighbor.element);
             if neighbor_element_type.form == ElementForm::Gas
                 || (neighbor_element_type.form == ElementForm::Liquid
-                    && neighbor.element != cell.element
-                    && neighbor_element_type.weight < cell_element_type.weight
-                    && once_per(random, 3))
+                && neighbor.element != cell.element
+                && neighbor_element_type.weight < cell_element_type.weight
+                && once_per(random, 3))
             {
                 // Slide sideways
                 sandbox.swap(x, y, check_x, y);
@@ -263,7 +262,7 @@ fn handle_gas_form(sandbox: &mut SandBox, x: usize, y: usize, random: u32) -> bo
     let cell_element_type = element_type(cell.element);
 
     // Move in a random direction, with a tendency upwards
-    let (nx, ny) = match random % 4 {
+    let (nx, ny) = match random % 5 {
         0 => (x + 1, y),
         1 => (x - 1, y),
         _ => (x, y - 1),
@@ -286,11 +285,10 @@ fn handle_source_cell(
     y: usize,
     sandbox: &mut SandBox,
     cell_type: &ElementType,
-    random: u32,
 ) {
     for (nx, ny) in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)] {
         if sandbox.get(nx, ny).element == Element::Air {
-            sandbox.set_element(nx, ny, cell_type.source_element, random);
+            sandbox.set_element(nx, ny, cell_type.source_element);
         }
     }
 }
@@ -316,7 +314,7 @@ fn update_water(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool 
         }
         Element::Fire => {
             sandbox.clear_cell(x, y);
-            sandbox.set_element(nx, ny, Element::Water, random);
+            sandbox.set_element(nx, ny, Element::Water);
             return true;
         }
         _ => {}
@@ -347,7 +345,7 @@ fn update_drain(x: usize, y: usize, sandbox: &mut SandBox, _random: u32) -> bool
 fn update_fire(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
     // Reduce fire strength over time
     if once_per(random, 2) && sandbox.get_mut(x, y).dissolve_to(Element::Air) {
-        sandbox.set_element(x, y, Element::Smoke, random);
+        sandbox.set_element(x, y, Element::Smoke);
         return true;
     }
     false
@@ -370,7 +368,7 @@ fn update_lava(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
     }
     // Give off sparks
     if once_per(random, 100) && sandbox.get(x, y - 1).element == Element::Air {
-        sandbox.set_element(x, y - 1, Element::Fire, random);
+        sandbox.set_element(x, y - 1, Element::Fire);
     }
     false
 }
@@ -396,14 +394,14 @@ fn update_iron(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
         // Rust iron by reducing its strength somewhat randomly
         if once_per(random, 3) && !sandbox.reduce_strength(x, y, 1) {
             // Turn into rust
-            sandbox.set_element(x, y, Element::Rust, random);
+            sandbox.set_element(x, y, Element::Rust);
             return true;
         }
     }
     false
 }
 
-fn update_seed(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
+fn update_seed(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
     // Check if we have water and nutrition
     let mut nutrition = false;
     let mut water = false;
@@ -424,7 +422,6 @@ fn update_seed(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
             y,
             Element::Plant,
             element_type(Element::Seed).strength,
-            random,
         );
         sandbox.get_mut(x, y).variant = element_type(Element::Seed).strength;
         true
@@ -441,7 +438,7 @@ fn update_plant(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool 
     if cell_variant <= 1 {
         // Sometimes turns into seed
         if once_per(random, 5) {
-            sandbox.set_element(x, y, Element::Seed, random);
+            sandbox.set_element(x, y, Element::Seed);
         }
     }
 
@@ -469,7 +466,7 @@ fn update_plant(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool 
     }
     if !attached {
         // Not attached, so die
-        sandbox.set_element(x, y, Element::Ash, random);
+        sandbox.set_element(x, y, Element::Ash);
         return true;
     }
     if cell_strength <= 1 {
@@ -486,7 +483,7 @@ fn update_plant(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool 
     let other_element = sandbox.get(nx, ny).element;
     let new_cell_strength = cell_strength - 1;
     if element_type(other_element).has_flag(FLAG_ALLOW_PLANT) {
-        sandbox.set_element_with_strength(nx, ny, Element::Plant, new_cell_strength, random);
+        sandbox.set_element_with_strength(nx, ny, Element::Plant, new_cell_strength);
         sandbox.get_mut(nx, ny).variant = cell_variant - 1;
         sandbox.reduce_strength(x, y, new_cell_strength);
     }
@@ -494,18 +491,18 @@ fn update_plant(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool 
     false
 }
 
-fn update_tnt(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
+fn update_explosive(element: Element, x: usize, y: usize, sandbox: &mut SandBox) -> bool {
     let strength = sandbox.get(x, y).strength;
-    if strength == element_type(Element::TNT).strength {
+    if strength == element_type(element).strength {
         return false;
     }
-    sandbox.set_element_with_strength(x, y, Element::Explosion, strength, random);
+    sandbox.set_element_with_strength(x, y, Element::Explosion, strength);
     true
 }
 
 fn update_explosion(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
     if !sandbox.reduce_strength(x, y, 1) {
-        sandbox.set_element(x, y, Element::Fire, random);
+        sandbox.set_element(x, y, Element::Fire);
         return true;
     }
     // Spread explosion
@@ -516,7 +513,7 @@ fn update_explosion(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> b
     };
     for (nx, ny) in neighbors {
         let neighbor = sandbox.get_mut(nx, ny);
-        if neighbor.element == Element::TNT {
+        if neighbor.element == Element::TNT || neighbor.element == Element::Gunpowder {
             let explosion_strength = if neighbor.strength + strength < 255 {
                 neighbor.strength + strength
             } else {
@@ -527,7 +524,6 @@ fn update_explosion(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> b
                 ny,
                 Element::Explosion,
                 explosion_strength,
-                random,
             );
         } else if neighbor.element != Element::Explosion {
             let neighbor_type = element_type(neighbor.element);
@@ -542,7 +538,6 @@ fn update_explosion(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> b
                     ny,
                     Element::Explosion,
                     strength - neighbor_strength,
-                    random,
                 );
             }
         }
@@ -550,7 +545,7 @@ fn update_explosion(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> b
     true
 }
 
-fn update_air(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
+fn update_air(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
     let mut living_neighbors = 0;
     if sandbox.get(x - 1, y - 1).element == Element::Life {
         living_neighbors += 1;
@@ -577,13 +572,13 @@ fn update_air(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
         living_neighbors += 1;
     }
     if living_neighbors == 3 {
-        sandbox.set_element(x, y, Element::Life, random);
+        sandbox.set_element(x, y, Element::Life);
         return true;
     }
     false
 }
 
-fn update_life(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
+fn update_life(x: usize, y: usize, sandbox: &mut SandBox) -> bool {
     let mut living_neighbors = 0;
     if sandbox.get(x - 1, y - 1).element == Element::Life {
         living_neighbors += 1;
@@ -610,7 +605,7 @@ fn update_life(x: usize, y: usize, sandbox: &mut SandBox, random: u32) -> bool {
         living_neighbors += 1;
     }
     if living_neighbors < 2 || living_neighbors > 3 {
-        sandbox.set_element(x, y, Element::Air, random);
+        sandbox.set_element(x, y, Element::Air);
         return true;
     }
     // Keep on living

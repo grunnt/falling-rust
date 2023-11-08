@@ -8,13 +8,9 @@ use bevy::{
 };
 use bevy_egui::EguiContexts;
 
-use crate::{
-    element::Element,
-    gui::{GuiMode, SandboxGui},
-    sandbox::SandBox,
-    SystemOrderLabel,
-    toolbox::ToolBox,
-};
+use crate::interface::gui::{GuiMode, SandboxGui};
+use crate::interface::toolbox::ToolBox;
+use crate::sandbox::{Element, SandBox};
 
 /// Handles both mouse and touch input for the sandbox editor
 pub struct PointerInputPlugin;
@@ -22,7 +18,7 @@ pub struct PointerInputPlugin;
 impl Plugin for PointerInputPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<PointerInputState>()
-            .add_systems(PreUpdate, pointer_input.in_set(SystemOrderLabel::PointerInput));
+            .add_systems(PreUpdate, pointer_input);
     }
 }
 
@@ -122,7 +118,7 @@ pub fn pointer_input(
     let half_height = (sandbox.height() / 2) as f32;
     if mouse.middle_button_down || (gui.mode == GuiMode::MoveView && mouse.left_button_down) {
         transform.translation.x += mouse.drag_movement.x * transform.scale.x;
-        transform.translation.y += mouse.drag_movement.y * transform.scale.y;
+        transform.translation.y -= mouse.drag_movement.y * transform.scale.y;
 
         transform.translation.x = transform.translation.x.clamp(-half_width, half_width);
         transform.translation.y = transform.translation.y.clamp(-half_height, half_height);
