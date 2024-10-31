@@ -2,8 +2,6 @@
 
 A falling-sand toy written using Rust, Bevy and egui.
 
-[Read more about it on my blog](https://www.basvs.dev/projects/falling-rust).
-
 ## How to run
 
 A release version for Windows is available at [GitHub releases](https://github.com/grunnt/falling-rust/releases).
